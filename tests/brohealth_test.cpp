@@ -669,6 +669,9 @@ void ProtectBrothersHealthTest::reminderNotificationCopyRespondsToLevel() {
 		const auto body = manager.notificationPreview(QStringLiteral("water"));
 		QVERIFY2(body.contains(QStringLiteral("TASK_WATER_DUE")), qPrintable(body));
 		QVERIFY2(body.contains(QStringLiteral("LEVEL_NO_DEBT")), qPrintable(body));
+		QVERIFY2(body.indexOf(QStringLiteral("LEVEL_NO_DEBT"))
+					 < body.indexOf(QStringLiteral("TASK_WATER_DUE")),
+				 qPrintable(body));
 	}
 
 	resetBrohealthConfig();
@@ -685,6 +688,9 @@ void ProtectBrothersHealthTest::reminderNotificationCopyRespondsToLevel() {
 		QVERIFY2(body.contains(QStringLiteral("TASK_WATER_DUE")), qPrintable(body));
 		QVERIFY2(body.contains(QStringLiteral("LEVEL_CRITICAL")), qPrintable(body));
 		QVERIFY2(body.contains(QStringLiteral("危急（20 分）")), qPrintable(body));
+		QVERIFY2(body.indexOf(QStringLiteral("LEVEL_CRITICAL"))
+					 < body.indexOf(QStringLiteral("TASK_WATER_DUE")),
+				 qPrintable(body));
 	}
 }
 

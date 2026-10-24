@@ -146,7 +146,7 @@ class ReminderManager : public QObject {
 	void	emitError(const QString& message);
 	void	setStatusPhrase(const QString& phrase);
 	QString buildDebtSentence() const;
-	QString notificationBody(const QString& taskId, int units);
+	QString notificationBody(const QString& taskId);
 	QString displayLevel() const;
 
 	DesktopNotifier _mNotifier;

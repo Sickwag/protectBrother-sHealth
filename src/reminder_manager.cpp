@@ -404,9 +404,10 @@ void ReminderManager::notifyPending(Runtime& runtime) {
 	if(!_mEnableNotifications || !runtime._pending)
 		return;
 
-	const auto task	 = runtime._config;
-	const auto title = QStringLiteral("%1提醒：兄弟来了").arg(task._name);
-	auto	   body	 = notificationBody(task._id, runtime._pendingUnits);
+	const auto task = runtime._config;
+	const auto title =
+		QStringLiteral("%1提醒：%2 %3").arg(task._name).arg(runtime._pendingUnits).arg(task._unit);
+	auto body = notificationBody(task._id);
 	if(!_mNotifier.actionsSupported())
 		body += QStringLiteral("\n没有按钮时请打开主程序处理。");
 
@@ -439,11 +440,11 @@ void ReminderManager::notifyBreakWarning(const Runtime& runtime) {
 	const auto title	   = QStringLiteral("休息预告：%1 分钟后").arg(K_BREAK_WARNING_SECONDS / 60);
 	const auto taskPhrase  = _mPhrases.phraseForTask(runtime._config._id, QStringLiteral("due"), score());
 	const auto levelPhrase = _mPhrases.phraseForScore(score());
-	auto body = QStringLiteral("兄弟还有 %1 秒就要来收走屏幕了，先把手上的事收个尾。\n%2")
-					.arg(K_BREAK_WARNING_SECONDS)
-					.arg(taskPhrase);
-	if(levelPhrase != taskPhrase)
-		body += QLatin1Char('\n') + levelPhrase;
+	QString	   body		   = levelPhrase;
+	if(taskPhrase != levelPhrase)
+		body += QLatin1Char('\n') + taskPhrase;
+	body +=
+		QStringLiteral("\n兄弟还有 %1 秒就要来收走屏幕了，先把手上的事收个尾。").arg(K_BREAK_WARNING_SECONDS);
 	_mNotifier.notify(title,
 					  body,
 					  {QStringLiteral("ledger"), QStringLiteral("查看兄弟账本")},
@@ -742,19 +743,20 @@ QString ReminderManager::taskUnit(const QString& taskId) const {
 	return runtime ? runtime->_config._unit : QString();
 }
 
-QString ReminderManager::notificationBody(const QString& taskId, int units) {
+QString ReminderManager::notificationBody(const QString& taskId) {
 	const auto* runtime = runtimeFor(taskId);
 	if(!runtime)
 		return {};
 
 	const auto task		   = runtime->_config;
 	const auto scoreValue  = score();
-	QString	   body		   = QStringLiteral("%1提醒：%2 %3。").arg(task._name).arg(units).arg(task._unit);
 	const auto taskPhrase  = _mPhrases.phraseForTask(task._id, QStringLiteral("due"), scoreValue);
 	const auto levelPhrase = _mPhrases.phraseForScore(scoreValue);
-	body += QLatin1Char('\n') + taskPhrase;
-	if(levelPhrase != taskPhrase)
-		body += QLatin1Char('\n') + levelPhrase;
+	// Lead with the level-dependent copy: notification shells may collapse the
+	// body, and the level line is the part that must change as debt grows.
+	QString body		   = levelPhrase;
+	if(taskPhrase != levelPhrase)
+		body += QLatin1Char('\n') + taskPhrase;
 	body += QLatin1Char('\n') + shortDebtSummary();
 	return body;
 }
@@ -763,8 +765,7 @@ QString ReminderManager::notificationPreview(const QString& taskId) {
 	const auto* runtime = runtimeFor(taskId);
 	if(!runtime)
 		return {};
-	const int units = runtime->_pending ? runtime->_pendingUnits : runtime->_config.unitsPerEvent();
-	return notificationBody(taskId, units);
+	return notificationBody(taskId);
 }
 
 QString ReminderManager::debtReport() {
