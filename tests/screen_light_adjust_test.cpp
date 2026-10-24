@@ -14,6 +14,7 @@ class ScreenLightAdjustTest : public QObject {
   private slots:
     void reminderCreatesOneWindowPerScreen();
     void reminderUsesTheSameMessageOnEveryScreen();
+    void reminderWindowsCoverTheirTargetScreens();
     void timerTracksWorkAndBreakPhases();
     void settingsPersistBreakOptionsAndDefaultPreset();
     void presetsStoreDisplayAndBreakSettingsTogether();
@@ -21,28 +22,56 @@ class ScreenLightAdjustTest : public QObject {
 };
 
 void ScreenLightAdjustTest::reminderCreatesOneWindowPerScreen() {
-    const auto available_screens = QGuiApplication::screens();
-    QVERIFY(!available_screens.isEmpty());
+    const auto screens = QGuiApplication::screens();
+    QVERIFY(!screens.isEmpty());
 
-    QList<QScreen*> targets{available_screens.first(), available_screens.first(), available_screens.first()};
     BreakReminder reminder;
-    reminder.show_break_on_screens(20, QStringLiteral("休息一下"), targets);
+    reminder.show_break_on_screens(20, QStringLiteral("休息一下"), screens);
 
-    QCOMPARE(reminder.visible_window_count(), targets.size());
+    QCOMPARE(reminder.visible_window_count(), screens.size());
     reminder.close_break();
     QCOMPARE(reminder.visible_window_count(), 0);
 }
 
 void ScreenLightAdjustTest::reminderUsesTheSameMessageOnEveryScreen() {
-    const auto available_screens = QGuiApplication::screens();
-    QVERIFY(!available_screens.isEmpty());
+    const auto screens = QGuiApplication::screens();
+    QVERIFY(!screens.isEmpty());
 
     const QString message = QStringLiteral("请休息并眺望远方");
-    QList<QScreen*> targets{available_screens.first(), available_screens.first()};
     BreakReminder reminder;
-    reminder.show_break_on_screens(15, message, targets);
+    reminder.show_break_on_screens(15, message, screens);
 
-    QCOMPARE(reminder.visible_messages(), QStringList({message, message}));
+    QCOMPARE(reminder.visible_messages(), QStringList(screens.size(), message));
+    reminder.close_break();
+}
+
+void ScreenLightAdjustTest::reminderWindowsCoverTheirTargetScreens() {
+    const auto screens = QGuiApplication::screens();
+    QVERIFY(!screens.isEmpty());
+
+    BreakReminder reminder;
+    reminder.show_break_on_screens(1, QStringLiteral("请休息一下"), screens);
+
+    QCOMPARE(reminder.visible_window_count(), screens.size());
+    for (const auto* screen : screens) {
+        bool found_window_covering_screen = false;
+        for (auto* widget : QApplication::topLevelWidgets()) {
+            if (widget->windowTitle() == QStringLiteral("休息时间") && widget->isVisible()
+                && widget->geometry() == screen->geometry()) {
+                found_window_covering_screen = true;
+                break;
+            }
+        }
+        QVERIFY2(found_window_covering_screen,
+                 qPrintable(QStringLiteral("No break window covers screen %1 at %2")
+                                .arg(screen->name(),
+                                     QStringLiteral("(%1,%2 %3x%4)")
+                                         .arg(screen->geometry().x())
+                                         .arg(screen->geometry().y())
+                                         .arg(screen->geometry().width())
+                                         .arg(screen->geometry().height()))));
+    }
+
     reminder.close_break();
 }
 

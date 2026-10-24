@@ -51,6 +51,7 @@ class BreakWindow final : public QWidget {
 		layout->addStretch();
 
 		setScreen(screen);
+		setGeometry(screen->geometry());
 		updateRemaining();
 
 		auto* refresh_timer = new QTimer(this);
