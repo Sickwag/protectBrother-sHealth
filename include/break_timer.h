@@ -8,28 +8,28 @@
 class BreakTimer : public QObject {
 	Q_OBJECT
   public:
-	explicit BreakTimer(int work_minutes, int break_minutes, QObject* parent = nullptr);
+	explicit BreakTimer(int workMinutes, int breakMinutes, QObject* parent = nullptr);
 
-	void set_durations(int work_minutes, int break_minutes);
-	void start_work();
-	void start_break();
+	void setDurations(int workMinutes, int breakMinutes);
+	void startWork();
+	void startBreak();
 	void stop();
 
-	QTime remaining_time() const;
+	QTime remainingTime() const;
 
-	bool is_working() const { return m_is_working; }
+	bool isWorking() const { return _mIsWorking; }
 
   signals:
-	void work_period_finished(int break_minutes);
-	void break_period_finished();
-	void remaining_time_changed(const QTime& remaining, bool is_working);
+	void workPeriodFinished(int breakMinutes);
+	void breakPeriodFinished();
+	void remainingTimeChanged(const QTime& remaining, bool isWorking);
 
   private:
-	QTimer		  m_work_timer;
-	QTimer		  m_break_timer;
-	QTimer		  m_update_timer;
-	QElapsedTimer m_elapsed_timer;
-	int			  m_work_minutes;
-	int			  m_break_minutes;
-	bool		  m_is_working = true;
+	QTimer		  _mWorkTimer;
+	QTimer		  _mBreakTimer;
+	QTimer		  _mUpdateTimer;
+	QElapsedTimer _mElapsedTimer;
+	int			  _mWorkMinutes;
+	int			  _mBreakMinutes;
+	bool		  _mIsWorking = true;
 };

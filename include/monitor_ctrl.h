@@ -3,11 +3,11 @@
 #include <QString>
 
 struct MonitorInfo {
-	QString name;
-	double	brightness = 1.0;  // 0.1 - 1.0
-	double	gamma_r	   = 1.0;
-	double	gamma_g	   = 1.0;
-	double	gamma_b	   = 1.0;
+	QString _name;
+	double	_brightness = 1.0;	// 0.1 - 1.0
+	double	_gammaR		= 1.0;
+	double	_gammaG		= 1.0;
+	double	_gammaB		= 1.0;
 };
 
 class MonitorController {
@@ -19,5 +19,5 @@ class MonitorController {
 
 	// X11 changes one xrandr output; Wayland uses Redshift's compositor backend.
 	static bool
-	apply(const QString& output, double brightness, int temperature_kelvin, QString* error = nullptr);
+	apply(const QString& output, double brightness, int temperatureKelvin, QString* error = nullptr);
 };

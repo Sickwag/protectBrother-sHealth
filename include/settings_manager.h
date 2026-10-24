@@ -4,10 +4,10 @@
 #include <QVector>
 
 struct MonitorSettings {
-	QString name;
-	int		brightness = 100;
-	bool	night_mode = false;
-	int		warmth	   = 5000;
+	QString _name;
+	int		_brightness = 100;
+	bool	_nightMode	= false;
+	int		_warmth		= 5000;
 };
 
 class SettingsManager {
@@ -22,52 +22,52 @@ class SettingsManager {
 	const QVector<MonitorSettings>& monitors() const;
 
 	// Sync flags
-	bool sync_brightness() const { return m_sync_brightness; }
+	bool syncBrightness() const { return _mSyncBrightness; }
 
-	void set_sync_brightness(bool v) { m_sync_brightness = v; }
+	void setSyncBrightness(bool v) { _mSyncBrightness = v; }
 
-	bool sync_night() const { return m_sync_night; }
+	bool syncNight() const { return _mSyncNight; }
 
-	void set_sync_night(bool v) { m_sync_night = v; }
+	void setSyncNight(bool v) { _mSyncNight = v; }
 
-	bool break_enabled() const { return m_break_enabled; }
+	bool breakEnabled() const { return _mBreakEnabled; }
 
-	void set_break_enabled(bool v) { m_break_enabled = v; }
+	void setBreakEnabled(bool v) { _mBreakEnabled = v; }
 
-	int work_minutes() const { return m_work_minutes; }
+	int workMinutes() const { return _mWorkMinutes; }
 
-	void set_work_minutes(int v) { m_work_minutes = v; }
+	void setWorkMinutes(int v) { _mWorkMinutes = v; }
 
-	int break_minutes() const { return m_break_minutes; }
+	int breakMinutes() const { return _mBreakMinutes; }
 
-	void set_break_minutes(int v) { m_break_minutes = v; }
+	void setBreakMinutes(int v) { _mBreakMinutes = v; }
 
-	QString break_message() const { return m_break_message; }
+	QString breakMessage() const { return _mBreakMessage; }
 
-	void set_break_message(const QString& v) { m_break_message = v; }
+	void setBreakMessage(const QString& v) { _mBreakMessage = v; }
 
 	// Window geometry
-	QByteArray window_geometry() const { return m_window_geometry; }
+	QByteArray windowGeometry() const { return _mWindowGeometry; }
 
-	void set_window_geometry(const QByteArray& g) { m_window_geometry = g; }
+	void setWindowGeometry(const QByteArray& g) { _mWindowGeometry = g; }
 
 	// Default preset
-	QString default_preset() const { return m_default_preset; }
+	QString defaultPreset() const { return _mDefaultPreset; }
 
-	void set_default_preset(const QString& name) { m_default_preset = name; }
+	void setDefaultPreset(const QString& name) { _mDefaultPreset = name; }
 
 	// Config directory path
-	static QString config_dir();
+	static QString configDir();
 
   private:
-	QString					 m_file_path;
-	QVector<MonitorSettings> m_monitors;
-	bool					 m_sync_brightness = false;
-	bool					 m_sync_night	   = false;
-	bool					 m_break_enabled   = true;
-	int						 m_work_minutes	   = 120;
-	int						 m_break_minutes   = 20;
-	QString					 m_break_message   = QStringLiteral("该休息一下了，眺望远方并活动身体。");
-	QByteArray				 m_window_geometry;
-	QString					 m_default_preset;
+	QString					 _mFilePath;
+	QVector<MonitorSettings> _mMonitors;
+	bool					 _mSyncBrightness = false;
+	bool					 _mSyncNight	  = false;
+	bool					 _mBreakEnabled	  = true;
+	int						 _mWorkMinutes	  = 120;
+	int						 _mBreakMinutes	  = 20;
+	QString	   _mBreakMessage = QStringLiteral("该休息一下了，眺望远方并活动身体。");
+	QByteArray _mWindowGeometry;
+	QString	   _mDefaultPreset;
 };

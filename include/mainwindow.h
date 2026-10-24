@@ -17,14 +17,14 @@
 #include <QVector>
 
 struct MonitorWidgets {
-	QLabel*	   name_label		 = nullptr;
-	QSlider*   brightness_slider = nullptr;
-	QSpinBox*  brightness_spin	 = nullptr;
-	QCheckBox* night_mode		 = nullptr;
-	QSlider*   warmth_slider	 = nullptr;
-	QSpinBox*  warmth_spin		 = nullptr;
-	QWidget*   warmth_container	 = nullptr;
-	QString	   output_name;
+	QLabel*	   _nameLabel		 = nullptr;
+	QSlider*   _brightnessSlider = nullptr;
+	QSpinBox*  _brightnessSpin	 = nullptr;
+	QCheckBox* _nightMode		 = nullptr;
+	QSlider*   _warmthSlider	 = nullptr;
+	QSpinBox*  _warmthSpin		 = nullptr;
+	QWidget*   _warmthContainer	 = nullptr;
+	QString	   _outputName;
 };
 
 class MainWindow : public QMainWindow {
@@ -37,51 +37,51 @@ class MainWindow : public QMainWindow {
 	void closeEvent(QCloseEvent* event) override;
 
   private slots:
-	void on_brightness_changed(int idx, int value);
-	void on_night_mode_toggled(int idx, bool checked);
-	void on_warmth_changed(int idx, int value);
-	void on_tray_activated(QSystemTrayIcon::ActivationReason reason);
-	void on_break_settings_changed();
-	void on_work_period_finished(int break_minutes);
-	void on_break_period_finished();
-	void update_countdown(const QTime& remaining, bool is_working);
-	void set_day_mode();
-	void set_night_mode();
+	void onBrightnessChanged(int idx, int value);
+	void onNightModeToggled(int idx, bool checked);
+	void onWarmthChanged(int idx, int value);
+	void onTrayActivated(QSystemTrayIcon::ActivationReason reason);
+	void onBreakSettingsChanged();
+	void onWorkPeriodFinished(int breakMinutes);
+	void onBreakPeriodFinished();
+	void updateCountdown(const QTime& remaining, bool isWorking);
+	void setDayMode();
+	void setNightMode();
 
-	void save_current_as_preset();
-	void load_selected_preset();
-	void set_selected_as_default();
-	void delete_selected_preset();
-	void on_preset_list_double_clicked(QListWidgetItem* item);
+	void saveCurrentAsPreset();
+	void loadSelectedPreset();
+	void setSelectedAsDefault();
+	void deleteSelectedPreset();
+	void onPresetListDoubleClicked(QListWidgetItem* item);
 
   private:
-	void setup_ui();
-	void setup_tray();
-	void setup_break_scheduler();
-	void apply_monitor(int idx);
-	void apply_preset(const QJsonObject& preset);
-	void load_settings();
-	void save_settings();
-	void refresh_preset_list();
-	void set_break_controls(const QJsonObject& settings);
+	void setupUi();
+	void setupTray();
+	void setupBreakScheduler();
+	void applyMonitor(int idx);
+	void applyPreset(const QJsonObject& preset);
+	void loadSettings();
+	void saveSettings();
+	void refreshPresetList();
+	void setBreakControls(const QJsonObject& settings);
 
-	SettingsManager m_settings;
-	PresetManager	m_presets;
+	SettingsManager _mSettings;
+	PresetManager	_mPresets;
 
-	QVector<MonitorWidgets> m_monitors;
+	QVector<MonitorWidgets> _mMonitors;
 
-	QTabWidget*		 m_tab_widget		= nullptr;
-	QCheckBox*		 m_sync_brightness	= nullptr;
-	QCheckBox*		 m_sync_night		= nullptr;
-	QSystemTrayIcon* m_tray_icon		= nullptr;
-	QListWidget*	 m_preset_list		= nullptr;
-	QLineEdit*		 m_preset_name_edit = nullptr;
-	QCheckBox*		 m_break_enabled	= nullptr;
-	QSpinBox*		 m_work_minutes		= nullptr;
-	QSpinBox*		 m_break_minutes	= nullptr;
-	QLineEdit*		 m_break_message	= nullptr;
-	QLabel*			 m_countdown_label	= nullptr;
-	BreakTimer*		 m_timer			= nullptr;
-	BreakReminder*	 m_break_reminder	= nullptr;
-	bool			 m_updating			= false;
+	QTabWidget*		 _mTabWidget	  = nullptr;
+	QCheckBox*		 _mSyncBrightness = nullptr;
+	QCheckBox*		 _mSyncNight	  = nullptr;
+	QSystemTrayIcon* _mTrayIcon		  = nullptr;
+	QListWidget*	 _mPresetList	  = nullptr;
+	QLineEdit*		 _mPresetNameEdit = nullptr;
+	QCheckBox*		 _mBreakEnabled	  = nullptr;
+	QSpinBox*		 _mWorkMinutes	  = nullptr;
+	QSpinBox*		 _mBreakMinutes	  = nullptr;
+	QLineEdit*		 _mBreakMessage	  = nullptr;
+	QLabel*			 _mCountdownLabel = nullptr;
+	BreakTimer*		 _mTimer		  = nullptr;
+	BreakReminder*	 _mBreakReminder  = nullptr;
+	bool			 _mUpdating		  = false;
 };

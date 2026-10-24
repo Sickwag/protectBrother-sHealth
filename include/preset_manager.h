@@ -7,16 +7,16 @@ class PresetManager {
   public:
 	PresetManager();
 
-	QStringList list_presets();
+	QStringList listPresets();
 	bool		save(const QString& name, const QJsonObject& data);
 	QJsonObject load(const QString& name);
 	bool		remove(const QString& name);
 	bool		exists(const QString& name);
 
 	// Directory where presets are stored
-	QString presets_dir() const { return m_dir_path; }
+	QString presetsDir() const { return _mDirPath; }
 
   private:
-	QString preset_file_path(const QString& name) const;
-	QString m_dir_path;
+	QString presetFilePath(const QString& name) const;
+	QString _mDirPath;
 };

@@ -35,287 +35,287 @@ MainWindow::MainWindow(QWidget* parent)
 
 	for(const auto& mi : MonitorController::discover()) {
 		MonitorWidgets mw;
-		mw.output_name = mi.name;
-		m_monitors.append(mw);
+		mw._outputName = mi._name;
+		_mMonitors.append(mw);
 	}
 
-	setup_ui();
-	setup_tray();
-	load_settings();
-	setup_break_scheduler();
+	setupUi();
+	setupTray();
+	loadSettings();
+	setupBreakScheduler();
 
-	connect(qApp, &QApplication::aboutToQuit, this, &MainWindow::save_settings);
+	connect(qApp, &QApplication::aboutToQuit, this, &MainWindow::saveSettings);
 }
 
 // ============================================================
 //  UI Setup
 // ============================================================
 
-void MainWindow::setup_ui() {
-	auto* central	  = new QWidget(this);
-	auto* main_layout = new QVBoxLayout(central);
-	main_layout->setContentsMargins(12, 12, 12, 12);
-	main_layout->setSpacing(8);
+void MainWindow::setupUi() {
+	auto* central	 = new QWidget(this);
+	auto* mainLayout = new QVBoxLayout(central);
+	mainLayout->setContentsMargins(12, 12, 12, 12);
+	mainLayout->setSpacing(8);
 
-	m_tab_widget		 = new QTabWidget;
+	_mTabWidget			= new QTabWidget;
 
 	// ---------- Tab 1: Display ----------
-	auto* display_tab	 = new QWidget;
-	auto* display_layout = new QVBoxLayout(display_tab);
-	display_layout->setContentsMargins(0, 8, 0, 0);
-	display_layout->setSpacing(8);
+	auto* displayTab	= new QWidget;
+	auto* displayLayout = new QVBoxLayout(displayTab);
+	displayLayout->setContentsMargins(0, 8, 0, 0);
+	displayLayout->setSpacing(8);
 
 	auto* scroll = new QScrollArea;
 	scroll->setWidgetResizable(true);
 	scroll->setFrameShape(QFrame::NoFrame);
-	auto* scroll_content  = new QWidget;
-	auto* monitors_layout = new QVBoxLayout(scroll_content);
-	monitors_layout->setSpacing(10);
+	auto* scrollContent	 = new QWidget;
+	auto* monitorsLayout = new QVBoxLayout(scrollContent);
+	monitorsLayout->setSpacing(10);
 
-	for(int i = 0; i < m_monitors.size(); ++i) {
-		auto* mw	= &m_monitors[i];
+	for(int i = 0; i < _mMonitors.size(); ++i) {
+		auto* mw	= &_mMonitors[i];
 
 		auto* group = new QGroupBox;
 		auto* gl	= new QVBoxLayout(group);
 		gl->setSpacing(6);
 
 		// Monitor name
-		const auto display_name = mw->output_name == QStringLiteral("wayland-global")
-									  ? QStringLiteral("Wayland（所有显示器）")
-									  : mw->output_name;
-		auto*	   name			= new QLabel(display_name);
-		QFont	   name_font	= name->font();
-		name_font.setBold(true);
-		name_font.setPointSize(name_font.pointSize() + 1);
-		name->setFont(name_font);
+		const auto displayName = mw->_outputName == QStringLiteral("wayland-global")
+									 ? QStringLiteral("Wayland（所有显示器）")
+									 : mw->_outputName;
+		auto*	   name		   = new QLabel(displayName);
+		QFont	   nameFont	   = name->font();
+		nameFont.setBold(true);
+		nameFont.setPointSize(nameFont.pointSize() + 1);
+		name->setFont(nameFont);
 		gl->addWidget(name);
 
 		// Brightness row
-		auto* br_row   = new QHBoxLayout;
-		auto* br_label = new QLabel("亮度");
-		br_label->setFixedWidth(36);
-		auto* br_slider = new QSlider(Qt::Horizontal);
-		br_slider->setRange(BRIGHTNESS_MIN, MonitorController::isWaylandSession() ? 100 : BRIGHTNESS_MAX);
+		auto* brRow	  = new QHBoxLayout;
+		auto* brLabel = new QLabel("亮度");
+		brLabel->setFixedWidth(36);
+		auto* brSlider = new QSlider(Qt::Horizontal);
+		brSlider->setRange(BRIGHTNESS_MIN, MonitorController::isWaylandSession() ? 100 : BRIGHTNESS_MAX);
 
 		// bright spin box
-		auto* br_spin = new QSpinBox;
-		br_spin->setRange(BRIGHTNESS_MIN, MonitorController::isWaylandSession() ? 100 : BRIGHTNESS_MAX);
-		br_spin->setSuffix("%");
-		br_spin->setSingleStep(1);
-		br_spin->setKeyboardTracking(false);
-		br_spin->setAccelerated(true);
-		br_spin->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-		br_spin->setValue(100);
+		auto* brSpin = new QSpinBox;
+		brSpin->setRange(BRIGHTNESS_MIN, MonitorController::isWaylandSession() ? 100 : BRIGHTNESS_MAX);
+		brSpin->setSuffix("%");
+		brSpin->setSingleStep(1);
+		brSpin->setKeyboardTracking(false);
+		brSpin->setAccelerated(true);
+		brSpin->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+		brSpin->setValue(100);
 
-		br_slider->setValue(100);
+		brSlider->setValue(100);
 
-		br_row->addWidget(br_label);
-		br_row->addWidget(br_slider, 1);
-		br_row->addWidget(br_spin);
-		gl->addLayout(br_row);
+		brRow->addWidget(brLabel);
+		brRow->addWidget(brSlider, 1);
+		brRow->addWidget(brSpin);
+		gl->addLayout(brRow);
 
 		// Night mode toggle
 		auto* night = new QCheckBox("护眼模式");
 		gl->addWidget(night);
 
 		// Warmth row (hidden until night mode on)
-		auto* wm_row   = new QHBoxLayout;
-		auto* wm_label = new QLabel("色温");
-		wm_label->setFixedWidth(36);
-		auto* wm_slider = new QSlider(Qt::Horizontal);
-		wm_slider->setRange(WARMTH_MIN, WARMTH_MAX);
-		wm_slider->setSingleStep(50);
-		wm_slider->setPageStep(500);
-		wm_slider->setValue(5000);
+		auto* wmRow	  = new QHBoxLayout;
+		auto* wmLabel = new QLabel("色温");
+		wmLabel->setFixedWidth(36);
+		auto* wmSlider = new QSlider(Qt::Horizontal);
+		wmSlider->setRange(WARMTH_MIN, WARMTH_MAX);
+		wmSlider->setSingleStep(50);
+		wmSlider->setPageStep(500);
+		wmSlider->setValue(5000);
 
 		// wm spin box
-		auto* wm_spin = new QSpinBox;
-		wm_spin->setRange(WARMTH_MIN, WARMTH_MAX);
-		wm_spin->setSuffix("K");
-		wm_spin->setSingleStep(50);
-		wm_spin->setKeyboardTracking(false);
-		wm_spin->setAccelerated(true);
-		wm_spin->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-		wm_spin->setValue(5000);
+		auto* wmSpin = new QSpinBox;
+		wmSpin->setRange(WARMTH_MIN, WARMTH_MAX);
+		wmSpin->setSuffix("K");
+		wmSpin->setSingleStep(50);
+		wmSpin->setKeyboardTracking(false);
+		wmSpin->setAccelerated(true);
+		wmSpin->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+		wmSpin->setValue(5000);
 
-		wm_row->addWidget(wm_label);
-		wm_row->addWidget(wm_slider, 1);
-		wm_row->addWidget(wm_spin);
+		wmRow->addWidget(wmLabel);
+		wmRow->addWidget(wmSlider, 1);
+		wmRow->addWidget(wmSpin);
 
-		auto* wm_container = new QWidget;
-		wm_container->setLayout(wm_row);
-		wm_container->setVisible(false);
-		gl->addWidget(wm_container);
+		auto* wmContainer = new QWidget;
+		wmContainer->setLayout(wmRow);
+		wmContainer->setVisible(false);
+		gl->addWidget(wmContainer);
 
-		monitors_layout->addWidget(group);
+		monitorsLayout->addWidget(group);
 
-		mw->name_label		  = name;
-		mw->brightness_slider = br_slider;
-		mw->brightness_spin	  = br_spin;
-		mw->night_mode		  = night;
-		mw->warmth_slider	  = wm_slider;
-		mw->warmth_spin		  = wm_spin;
-		mw->warmth_container  = wm_container;
+		mw->_nameLabel		  = name;
+		mw->_brightnessSlider = brSlider;
+		mw->_brightnessSpin	  = brSpin;
+		mw->_nightMode		  = night;
+		mw->_warmthSlider	  = wmSlider;
+		mw->_warmthSpin		  = wmSpin;
+		mw->_warmthContainer  = wmContainer;
 
 		// Brightness connections
-		connect(br_slider, &QSlider::valueChanged, this, [this, i](int v) { on_brightness_changed(i, v); });
+		connect(brSlider, &QSlider::valueChanged, this, [this, i](int v) { onBrightnessChanged(i, v); });
 
-		connect(br_slider, &QSlider::valueChanged, br_spin, &QSpinBox::setValue);
-		connect(br_spin, QOverload<int>::of(&QSpinBox::valueChanged), br_slider, &QSlider::setValue);
+		connect(brSlider, &QSlider::valueChanged, brSpin, &QSpinBox::setValue);
+		connect(brSpin, QOverload<int>::of(&QSpinBox::valueChanged), brSlider, &QSlider::setValue);
 
-		connect(night, &QCheckBox::toggled, this, [this, i](bool c) { on_night_mode_toggled(i, c); });
+		connect(night, &QCheckBox::toggled, this, [this, i](bool c) { onNightModeToggled(i, c); });
 
 		// Warmth connections
-		connect(wm_slider, &QSlider::valueChanged, this, [this, i](int v) { on_warmth_changed(i, v); });
-		connect(wm_slider, &QSlider::valueChanged, wm_spin, &QSpinBox::setValue);
-		connect(wm_spin, QOverload<int>::of(&QSpinBox::valueChanged), wm_slider, &QSlider::setValue);
+		connect(wmSlider, &QSlider::valueChanged, this, [this, i](int v) { onWarmthChanged(i, v); });
+		connect(wmSlider, &QSlider::valueChanged, wmSpin, &QSpinBox::setValue);
+		connect(wmSpin, QOverload<int>::of(&QSpinBox::valueChanged), wmSlider, &QSlider::setValue);
 	}
 
-	if(m_monitors.isEmpty()) {
+	if(_mMonitors.isEmpty()) {
 		auto* unavailable = new QLabel(MonitorController::isWaylandSession()
 										   ? QStringLiteral("未检测到可调整的显示器；休息提醒仍可使用。")
 										   : QStringLiteral("未检测到 xrandr 显示输出；休息提醒仍可使用。"));
 		unavailable->setWordWrap(true);
 		unavailable->setStyleSheet(QStringLiteral("color: #a33;"));
-		monitors_layout->addWidget(unavailable);
+		monitorsLayout->addWidget(unavailable);
 	} else if(MonitorController::isWaylandSession()) {
-		auto* wayland_hint =
+		auto* waylandHint =
 			new QLabel(QStringLiteral("Wayland "
 									  "色温和亮度由桌面合成器统一调整，休息提醒会显示在每个屏幕。"));
-		wayland_hint->setWordWrap(true);
-		wayland_hint->setStyleSheet(QStringLiteral("color: gray;"));
-		monitors_layout->addWidget(wayland_hint);
+		waylandHint->setWordWrap(true);
+		waylandHint->setStyleSheet(QStringLiteral("color: gray;"));
+		monitorsLayout->addWidget(waylandHint);
 	}
 
-	scroll->setWidget(scroll_content);
-	display_layout->addWidget(scroll, 1);
+	scroll->setWidget(scrollContent);
+	displayLayout->addWidget(scroll, 1);
 
 	// Separator
 	auto* sep = new QFrame;
 	sep->setFrameShape(QFrame::HLine);
 	sep->setFrameShadow(QFrame::Sunken);
-	display_layout->addWidget(sep);
+	displayLayout->addWidget(sep);
 
 	// Sync toggles
-	auto* sync_row	  = new QHBoxLayout;
-	m_sync_brightness = new QCheckBox("同步亮度");
-	m_sync_night	  = new QCheckBox("同步护眼模式");
-	sync_row->addWidget(m_sync_brightness);
-	sync_row->addStretch();
-	sync_row->addWidget(m_sync_night);
+	auto* syncRow	 = new QHBoxLayout;
+	_mSyncBrightness = new QCheckBox("同步亮度");
+	_mSyncNight		 = new QCheckBox("同步护眼模式");
+	syncRow->addWidget(_mSyncBrightness);
+	syncRow->addStretch();
+	syncRow->addWidget(_mSyncNight);
 
-	auto* sync_container = new QWidget;
-	sync_container->setLayout(sync_row);
-	display_layout->addWidget(sync_container);
+	auto* syncContainer = new QWidget;
+	syncContainer->setLayout(syncRow);
+	displayLayout->addWidget(syncContainer);
 
-	m_tab_widget->addTab(display_tab, "显示");
+	_mTabWidget->addTab(displayTab, "显示");
 
 	// ---------- Tab 2: Break reminders ----------
-	auto* break_tab	   = new QWidget;
-	auto* break_layout = new QVBoxLayout(break_tab);
-	break_layout->setContentsMargins(12, 12, 12, 12);
-	break_layout->setSpacing(10);
+	auto* breakTab	  = new QWidget;
+	auto* breakLayout = new QVBoxLayout(breakTab);
+	breakLayout->setContentsMargins(12, 12, 12, 12);
+	breakLayout->setSpacing(10);
 
-	m_break_enabled = new QCheckBox(QStringLiteral("启用定时休息提醒"));
-	break_layout->addWidget(m_break_enabled);
+	_mBreakEnabled = new QCheckBox(QStringLiteral("启用定时休息提醒"));
+	breakLayout->addWidget(_mBreakEnabled);
 
-	auto* break_form = new QFormLayout;
-	m_work_minutes	 = new QSpinBox;
-	m_work_minutes->setRange(1, 150);
-	m_work_minutes->setSuffix(QStringLiteral(" 分钟"));
-	m_work_minutes->setValue(120);
-	m_break_minutes = new QSpinBox;
-	m_break_minutes->setRange(1, 150);
-	m_break_minutes->setSuffix(QStringLiteral(" 分钟"));
-	m_break_minutes->setValue(20);
-	m_break_message = new QLineEdit;
-	m_break_message->setPlaceholderText(QStringLiteral("输入每个屏幕都显示的休息提示"));
-	break_form->addRow(QStringLiteral("工作时长"), m_work_minutes);
-	break_form->addRow(QStringLiteral("休息时长"), m_break_minutes);
-	break_form->addRow(QStringLiteral("提示语句"), m_break_message);
-	break_layout->addLayout(break_form);
+	auto* breakForm = new QFormLayout;
+	_mWorkMinutes	= new QSpinBox;
+	_mWorkMinutes->setRange(1, 150);
+	_mWorkMinutes->setSuffix(QStringLiteral(" 分钟"));
+	_mWorkMinutes->setValue(120);
+	_mBreakMinutes = new QSpinBox;
+	_mBreakMinutes->setRange(1, 150);
+	_mBreakMinutes->setSuffix(QStringLiteral(" 分钟"));
+	_mBreakMinutes->setValue(20);
+	_mBreakMessage = new QLineEdit;
+	_mBreakMessage->setPlaceholderText(QStringLiteral("输入每个屏幕都显示的休息提示"));
+	breakForm->addRow(QStringLiteral("工作时长"), _mWorkMinutes);
+	breakForm->addRow(QStringLiteral("休息时长"), _mBreakMinutes);
+	breakForm->addRow(QStringLiteral("提示语句"), _mBreakMessage);
+	breakLayout->addLayout(breakForm);
 
-	m_countdown_label = new QLabel(QStringLiteral("休息提醒尚未启动"));
-	m_countdown_label->setAlignment(Qt::AlignCenter);
-	break_layout->addWidget(m_countdown_label);
-	break_layout->addStretch();
-	m_tab_widget->addTab(break_tab, QStringLiteral("休息"));
+	_mCountdownLabel = new QLabel(QStringLiteral("休息提醒尚未启动"));
+	_mCountdownLabel->setAlignment(Qt::AlignCenter);
+	breakLayout->addWidget(_mCountdownLabel);
+	breakLayout->addStretch();
+	_mTabWidget->addTab(breakTab, QStringLiteral("休息"));
 
 	// ---------- Tab 3: Presets ----------
-	auto* presets_tab	 = new QWidget;
-	auto* presets_layout = new QVBoxLayout(presets_tab);
-	presets_layout->setContentsMargins(8, 8, 8, 8);
-	presets_layout->setSpacing(8);
+	auto* presetsTab	= new QWidget;
+	auto* presetsLayout = new QVBoxLayout(presetsTab);
+	presetsLayout->setContentsMargins(8, 8, 8, 8);
+	presetsLayout->setSpacing(8);
 
-	auto* preset_title = new QLabel("预设管理");
-	QFont title_font   = preset_title->font();
-	title_font.setBold(true);
-	title_font.setPointSize(title_font.pointSize() + 1);
-	preset_title->setFont(title_font);
-	presets_layout->addWidget(preset_title);
+	auto* presetTitle = new QLabel("预设管理");
+	QFont titleFont	  = presetTitle->font();
+	titleFont.setBold(true);
+	titleFont.setPointSize(titleFont.pointSize() + 1);
+	presetTitle->setFont(titleFont);
+	presetsLayout->addWidget(presetTitle);
 
-	m_preset_list = new QListWidget;
-	m_preset_list->setAlternatingRowColors(true);
-	presets_layout->addWidget(m_preset_list, 1);
+	_mPresetList = new QListWidget;
+	_mPresetList->setAlternatingRowColors(true);
+	presetsLayout->addWidget(_mPresetList, 1);
 
 	// Save as preset
-	auto* save_row	   = new QHBoxLayout;
-	m_preset_name_edit = new QLineEdit;
-	m_preset_name_edit->setPlaceholderText("输入预设名称...");
-	auto* save_btn = new QPushButton("保存当前为预设");
-	save_row->addWidget(m_preset_name_edit, 1);
-	save_row->addWidget(save_btn);
-	presets_layout->addLayout(save_row);
+	auto* saveRow	 = new QHBoxLayout;
+	_mPresetNameEdit = new QLineEdit;
+	_mPresetNameEdit->setPlaceholderText("输入预设名称...");
+	auto* saveBtn = new QPushButton("保存当前为预设");
+	saveRow->addWidget(_mPresetNameEdit, 1);
+	saveRow->addWidget(saveBtn);
+	presetsLayout->addLayout(saveRow);
 
 	// Load / Delete / Set default
-	auto* action_row = new QHBoxLayout;
-	auto* load_btn	 = new QPushButton("加载预设");
-	auto* del_btn	 = new QPushButton("删除预设");
-	auto* def_btn	 = new QPushButton("设为默认预设");
-	action_row->addWidget(load_btn);
-	action_row->addWidget(del_btn);
-	action_row->addWidget(def_btn);
-	presets_layout->addLayout(action_row);
+	auto* actionRow = new QHBoxLayout;
+	auto* loadBtn	= new QPushButton("加载预设");
+	auto* delBtn	= new QPushButton("删除预设");
+	auto* defBtn	= new QPushButton("设为默认预设");
+	actionRow->addWidget(loadBtn);
+	actionRow->addWidget(delBtn);
+	actionRow->addWidget(defBtn);
+	presetsLayout->addLayout(actionRow);
 
-	presets_layout->addStretch();
+	presetsLayout->addStretch();
 
-	m_tab_widget->addTab(presets_tab, "预设");
+	_mTabWidget->addTab(presetsTab, "预设");
 
-	main_layout->addWidget(m_tab_widget, 1);
+	mainLayout->addWidget(_mTabWidget, 1);
 
 	// Hint
 	auto* hint = new QLabel("关闭窗口后进入系统托盘；桌面没有托盘服务时会退出程序。");
 	hint->setAlignment(Qt::AlignCenter);
-	QFont hint_font = hint->font();
-	hint_font.setPointSize(hint_font.pointSize() - 1);
-	hint->setFont(hint_font);
+	QFont hintFont = hint->font();
+	hintFont.setPointSize(hintFont.pointSize() - 1);
+	hint->setFont(hintFont);
 	hint->setStyleSheet("color: gray;");
-	main_layout->addWidget(hint);
+	mainLayout->addWidget(hint);
 
 	setCentralWidget(central);
 
 	// Connections for preset tab
-	connect(save_btn, &QPushButton::clicked, this, &MainWindow::save_current_as_preset);
-	connect(load_btn, &QPushButton::clicked, this, &MainWindow::load_selected_preset);
-	connect(del_btn, &QPushButton::clicked, this, &MainWindow::delete_selected_preset);
-	connect(def_btn, &QPushButton::clicked, this, &MainWindow::set_selected_as_default);
-	connect(m_preset_list, &QListWidget::itemDoubleClicked, this, &MainWindow::on_preset_list_double_clicked);
+	connect(saveBtn, &QPushButton::clicked, this, &MainWindow::saveCurrentAsPreset);
+	connect(loadBtn, &QPushButton::clicked, this, &MainWindow::loadSelectedPreset);
+	connect(delBtn, &QPushButton::clicked, this, &MainWindow::deleteSelectedPreset);
+	connect(defBtn, &QPushButton::clicked, this, &MainWindow::setSelectedAsDefault);
+	connect(_mPresetList, &QListWidget::itemDoubleClicked, this, &MainWindow::onPresetListDoubleClicked);
 
-	connect(m_break_enabled, &QCheckBox::toggled, this, &MainWindow::on_break_settings_changed);
-	connect(m_work_minutes, &QSpinBox::valueChanged, this, &MainWindow::on_break_settings_changed);
-	connect(m_break_minutes, &QSpinBox::valueChanged, this, &MainWindow::on_break_settings_changed);
-	connect(m_break_message, &QLineEdit::editingFinished, this, &MainWindow::on_break_settings_changed);
-	connect(m_sync_brightness, &QCheckBox::toggled, this, [this] {
-		if(!m_updating)
-			save_settings();
+	connect(_mBreakEnabled, &QCheckBox::toggled, this, &MainWindow::onBreakSettingsChanged);
+	connect(_mWorkMinutes, &QSpinBox::valueChanged, this, &MainWindow::onBreakSettingsChanged);
+	connect(_mBreakMinutes, &QSpinBox::valueChanged, this, &MainWindow::onBreakSettingsChanged);
+	connect(_mBreakMessage, &QLineEdit::editingFinished, this, &MainWindow::onBreakSettingsChanged);
+	connect(_mSyncBrightness, &QCheckBox::toggled, this, [this] {
+		if(!_mUpdating)
+			saveSettings();
 	});
-	connect(m_sync_night, &QCheckBox::toggled, this, [this] {
-		if(!m_updating)
-			save_settings();
+	connect(_mSyncNight, &QCheckBox::toggled, this, [this] {
+		if(!_mUpdating)
+			saveSettings();
 	});
 }
 
-void MainWindow::setup_tray() {
+void MainWindow::setupTray() {
 	QPixmap pix(22, 22);
 	pix.fill(Qt::transparent);
 	{
@@ -326,39 +326,39 @@ void MainWindow::setup_tray() {
 		p.drawEllipse(3, 3, 16, 16);
 	}
 
-	m_tray_icon = new QSystemTrayIcon(QIcon(pix), this);
-	m_tray_icon->setToolTip("Screen Light Adjust");
+	_mTrayIcon = new QSystemTrayIcon(QIcon(pix), this);
+	_mTrayIcon->setToolTip("Screen Light Adjust");
 	setWindowIcon(QIcon(pix));
 
-	auto* tray_menu = new QMenu(this);
-	tray_menu->addAction("白天模式 (6500K)", this, &MainWindow::set_day_mode);
-	tray_menu->addAction("护眼模式 (3500K)", this, &MainWindow::set_night_mode);
-	tray_menu->addSeparator();
-	tray_menu->addAction("显示/隐藏", this, [this] { setVisible(!isVisible()); });
-	tray_menu->addSeparator();
-	tray_menu->addAction("退出", qApp, &QApplication::quit);
+	auto* trayMenu = new QMenu(this);
+	trayMenu->addAction("白天模式 (6500K)", this, &MainWindow::setDayMode);
+	trayMenu->addAction("护眼模式 (3500K)", this, &MainWindow::setNightMode);
+	trayMenu->addSeparator();
+	trayMenu->addAction("显示/隐藏", this, [this] { setVisible(!isVisible()); });
+	trayMenu->addSeparator();
+	trayMenu->addAction("退出", qApp, &QApplication::quit);
 
-	m_tray_icon->setContextMenu(tray_menu);
-	connect(m_tray_icon, &QSystemTrayIcon::activated, this, &MainWindow::on_tray_activated);
-	m_tray_icon->show();
+	_mTrayIcon->setContextMenu(trayMenu);
+	connect(_mTrayIcon, &QSystemTrayIcon::activated, this, &MainWindow::onTrayActivated);
+	_mTrayIcon->show();
 
 	if(!QSystemTrayIcon::isSystemTrayAvailable()) {
 		statusBar()->showMessage(QStringLiteral("当前桌面未提供系统托盘服务；关闭窗口会退出程序。"));
 	}
 }
 
-void MainWindow::setup_break_scheduler() {
-	m_timer			 = new BreakTimer(m_work_minutes->value(), m_break_minutes->value(), this);
-	m_break_reminder = new BreakReminder(this);
+void MainWindow::setupBreakScheduler() {
+	_mTimer			= new BreakTimer(_mWorkMinutes->value(), _mBreakMinutes->value(), this);
+	_mBreakReminder = new BreakReminder(this);
 
-	connect(m_timer, &BreakTimer::work_period_finished, this, &MainWindow::on_work_period_finished);
-	connect(m_timer, &BreakTimer::break_period_finished, this, &MainWindow::on_break_period_finished);
-	connect(m_timer, &BreakTimer::remaining_time_changed, this, &MainWindow::update_countdown);
+	connect(_mTimer, &BreakTimer::workPeriodFinished, this, &MainWindow::onWorkPeriodFinished);
+	connect(_mTimer, &BreakTimer::breakPeriodFinished, this, &MainWindow::onBreakPeriodFinished);
+	connect(_mTimer, &BreakTimer::remainingTimeChanged, this, &MainWindow::updateCountdown);
 
-	if(m_break_enabled->isChecked())
-		m_timer->start_work();
+	if(_mBreakEnabled->isChecked())
+		_mTimer->startWork();
 	else
-		m_countdown_label->setText(QStringLiteral("休息提醒已暂停"));
+		_mCountdownLabel->setText(QStringLiteral("休息提醒已暂停"));
 }
 
 // ============================================================
@@ -366,7 +366,7 @@ void MainWindow::setup_break_scheduler() {
 // ============================================================
 
 void MainWindow::closeEvent(QCloseEvent* event) {
-	if(m_tray_icon && m_tray_icon->isVisible() && QSystemTrayIcon::isSystemTrayAvailable()) {
+	if(_mTrayIcon && _mTrayIcon->isVisible() && QSystemTrayIcon::isSystemTrayAvailable()) {
 		hide();
 		event->ignore();
 	} else {
@@ -374,45 +374,45 @@ void MainWindow::closeEvent(QCloseEvent* event) {
 	}
 }
 
-void MainWindow::on_break_settings_changed() {
-	if(m_updating)
+void MainWindow::onBreakSettingsChanged() {
+	if(_mUpdating)
 		return;
 
-	if(m_timer) {
-		m_timer->set_durations(m_work_minutes->value(), m_break_minutes->value());
-		if(m_break_enabled->isChecked()) {
-			m_break_reminder->close_break();
-			m_timer->start_work();
+	if(_mTimer) {
+		_mTimer->setDurations(_mWorkMinutes->value(), _mBreakMinutes->value());
+		if(_mBreakEnabled->isChecked()) {
+			_mBreakReminder->closeBreak();
+			_mTimer->startWork();
 		} else {
-			m_timer->stop();
-			m_break_reminder->close_break();
-			m_countdown_label->setText(QStringLiteral("休息提醒已暂停"));
+			_mTimer->stop();
+			_mBreakReminder->closeBreak();
+			_mCountdownLabel->setText(QStringLiteral("休息提醒已暂停"));
 		}
 	}
-	save_settings();
+	saveSettings();
 }
 
-void MainWindow::on_work_period_finished(int break_minutes) {
-	Q_UNUSED(break_minutes);
-	if(!m_break_enabled->isChecked())
+void MainWindow::onWorkPeriodFinished(int breakMinutes) {
+	Q_UNUSED(breakMinutes);
+	if(!_mBreakEnabled->isChecked())
 		return;
 
-	m_break_reminder->show_break_with_message(m_break_minutes->value(), m_break_message->text());
-	m_timer->start_break();
+	_mBreakReminder->showBreakWithMessage(_mBreakMinutes->value(), _mBreakMessage->text());
+	_mTimer->startBreak();
 }
 
-void MainWindow::on_break_period_finished() {
-	m_break_reminder->close_break();
-	if(m_break_enabled->isChecked())
-		m_timer->start_work();
+void MainWindow::onBreakPeriodFinished() {
+	_mBreakReminder->closeBreak();
+	if(_mBreakEnabled->isChecked())
+		_mTimer->startWork();
 }
 
-void MainWindow::update_countdown(const QTime& remaining, bool is_working) {
-	const auto phase = is_working ? QStringLiteral("距离休息还有") : QStringLiteral("休息结束还剩");
-	m_countdown_label->setText(QStringLiteral("%1 %2").arg(phase, remaining.toString("hh:mm:ss")));
+void MainWindow::updateCountdown(const QTime& remaining, bool isWorking) {
+	const auto phase = isWorking ? QStringLiteral("距离休息还有") : QStringLiteral("休息结束还剩");
+	_mCountdownLabel->setText(QStringLiteral("%1 %2").arg(phase, remaining.toString("hh:mm:ss")));
 }
 
-void MainWindow::on_tray_activated(QSystemTrayIcon::ActivationReason reason) {
+void MainWindow::onTrayActivated(QSystemTrayIcon::ActivationReason reason) {
 	if(reason == QSystemTrayIcon::Trigger || reason == QSystemTrayIcon::DoubleClick) {
 		setVisible(!isVisible());
 		if(isVisible()) {
@@ -426,15 +426,15 @@ void MainWindow::on_tray_activated(QSystemTrayIcon::ActivationReason reason) {
 //  Mode Presets (tray)
 // ============================================================
 
-void MainWindow::set_day_mode() {
-	for(int i = 0; i < m_monitors.size(); ++i)
-		m_monitors[i].night_mode->setChecked(false);
+void MainWindow::setDayMode() {
+	for(int i = 0; i < _mMonitors.size(); ++i)
+		_mMonitors[i]._nightMode->setChecked(false);
 }
 
-void MainWindow::set_night_mode() {
-	for(int i = 0; i < m_monitors.size(); ++i) {
-		m_monitors[i].night_mode->setChecked(true);
-		m_monitors[i].warmth_slider->setValue(3500);
+void MainWindow::setNightMode() {
+	for(int i = 0; i < _mMonitors.size(); ++i) {
+		_mMonitors[i]._nightMode->setChecked(true);
+		_mMonitors[i]._warmthSlider->setValue(3500);
 	}
 }
 
@@ -442,105 +442,105 @@ void MainWindow::set_night_mode() {
 //  Signal Handlers
 // ============================================================
 
-void MainWindow::on_brightness_changed(int idx, int value) {
-	if(m_updating)
+void MainWindow::onBrightnessChanged(int idx, int value) {
+	if(_mUpdating)
 		return;
-	m_updating = true;
+	_mUpdating = true;
 
-	if(m_sync_brightness->isChecked()) {
-		for(int i = 0; i < m_monitors.size(); ++i) {
+	if(_mSyncBrightness->isChecked()) {
+		for(int i = 0; i < _mMonitors.size(); ++i) {
 			if(i == idx)
 				continue;
-			m_monitors[i].brightness_slider->blockSignals(true);
-			m_monitors[i].brightness_slider->setValue(value);
-			m_monitors[i].brightness_slider->blockSignals(false);
-			m_monitors[i].brightness_spin->blockSignals(true);
-			m_monitors[i].brightness_spin->setValue(value);
-			m_monitors[i].brightness_spin->blockSignals(false);
+			_mMonitors[i]._brightnessSlider->blockSignals(true);
+			_mMonitors[i]._brightnessSlider->setValue(value);
+			_mMonitors[i]._brightnessSlider->blockSignals(false);
+			_mMonitors[i]._brightnessSpin->blockSignals(true);
+			_mMonitors[i]._brightnessSpin->setValue(value);
+			_mMonitors[i]._brightnessSpin->blockSignals(false);
 		}
 	}
 
-	if(m_sync_brightness->isChecked()) {
-		for(int i = 0; i < m_monitors.size(); ++i)
-			apply_monitor(i);
+	if(_mSyncBrightness->isChecked()) {
+		for(int i = 0; i < _mMonitors.size(); ++i)
+			applyMonitor(i);
 	} else {
-		apply_monitor(idx);
+		applyMonitor(idx);
 	}
 
-	m_updating = false;
-	save_settings();
+	_mUpdating = false;
+	saveSettings();
 }
 
-void MainWindow::on_night_mode_toggled(int idx, bool checked) {
-	if(m_updating)
+void MainWindow::onNightModeToggled(int idx, bool checked) {
+	if(_mUpdating)
 		return;
-	m_updating = true;
+	_mUpdating = true;
 
-	m_monitors[idx].warmth_container->setVisible(checked);
+	_mMonitors[idx]._warmthContainer->setVisible(checked);
 
-	if(m_sync_night->isChecked()) {
-		for(int i = 0; i < m_monitors.size(); ++i) {
+	if(_mSyncNight->isChecked()) {
+		for(int i = 0; i < _mMonitors.size(); ++i) {
 			if(i == idx)
 				continue;
-			m_monitors[i].night_mode->blockSignals(true);
-			m_monitors[i].night_mode->setChecked(checked);
-			m_monitors[i].night_mode->blockSignals(false);
-			m_monitors[i].warmth_container->setVisible(checked);
+			_mMonitors[i]._nightMode->blockSignals(true);
+			_mMonitors[i]._nightMode->setChecked(checked);
+			_mMonitors[i]._nightMode->blockSignals(false);
+			_mMonitors[i]._warmthContainer->setVisible(checked);
 		}
 	}
 
-	if(m_sync_night->isChecked()) {
-		for(int i = 0; i < m_monitors.size(); ++i)
-			apply_monitor(i);
+	if(_mSyncNight->isChecked()) {
+		for(int i = 0; i < _mMonitors.size(); ++i)
+			applyMonitor(i);
 	} else {
-		apply_monitor(idx);
+		applyMonitor(idx);
 	}
 
-	m_updating = false;
-	save_settings();
+	_mUpdating = false;
+	saveSettings();
 }
 
-void MainWindow::on_warmth_changed(int idx, int value) {
-	if(m_updating)
+void MainWindow::onWarmthChanged(int idx, int value) {
+	if(_mUpdating)
 		return;
-	m_updating = true;
+	_mUpdating = true;
 
-	m_monitors[idx].warmth_spin->setValue(value);
+	_mMonitors[idx]._warmthSpin->setValue(value);
 
-	if(m_sync_night->isChecked()) {
-		for(int i = 0; i < m_monitors.size(); ++i) {
+	if(_mSyncNight->isChecked()) {
+		for(int i = 0; i < _mMonitors.size(); ++i) {
 			if(i == idx)
 				continue;
-			m_monitors[i].warmth_slider->blockSignals(true);
-			m_monitors[i].warmth_slider->setValue(value);
-			m_monitors[i].warmth_slider->blockSignals(false);
-			m_monitors[i].warmth_spin->blockSignals(true);
-			m_monitors[i].warmth_spin->setValue(value);
-			m_monitors[i].warmth_spin->blockSignals(false);
+			_mMonitors[i]._warmthSlider->blockSignals(true);
+			_mMonitors[i]._warmthSlider->setValue(value);
+			_mMonitors[i]._warmthSlider->blockSignals(false);
+			_mMonitors[i]._warmthSpin->blockSignals(true);
+			_mMonitors[i]._warmthSpin->setValue(value);
+			_mMonitors[i]._warmthSpin->blockSignals(false);
 		}
 	}
 
-	if(m_sync_night->isChecked()) {
-		for(int i = 0; i < m_monitors.size(); ++i)
-			apply_monitor(i);
+	if(_mSyncNight->isChecked()) {
+		for(int i = 0; i < _mMonitors.size(); ++i)
+			applyMonitor(i);
 	} else {
-		apply_monitor(idx);
+		applyMonitor(idx);
 	}
 
-	m_updating = false;
-	save_settings();
+	_mUpdating = false;
+	saveSettings();
 }
 
 // ============================================================
 //  Apply
 // ============================================================
 
-void MainWindow::apply_monitor(int idx) {
-	auto&	  mw		  = m_monitors[idx];
-	double	  b			  = mw.brightness_slider->value() / 100.0;
-	const int temperature = mw.night_mode->isChecked() ? mw.warmth_slider->value() : 6500;
+void MainWindow::applyMonitor(int idx) {
+	auto&	  mw		  = _mMonitors[idx];
+	double	  b			  = mw._brightnessSlider->value() / 100.0;
+	const int temperature = mw._nightMode->isChecked() ? mw._warmthSlider->value() : 6500;
 	QString	  error;
-	if(!MonitorController::apply(mw.output_name, b, temperature, &error))
+	if(!MonitorController::apply(mw._outputName, b, temperature, &error))
 		statusBar()->showMessage(QStringLiteral("显示设置未应用：%1").arg(error), 5000);
 }
 
@@ -548,34 +548,34 @@ void MainWindow::apply_monitor(int idx) {
 //  Settings Persistence
 // ============================================================
 
-void MainWindow::load_settings() {
-	m_settings.load();
+void MainWindow::loadSettings() {
+	_mSettings.load();
 
 	// Suppress signal-triggered save_settings() during initialization
-	m_updating = true;
+	_mUpdating = true;
 
-	m_sync_brightness->setChecked(m_settings.sync_brightness());
-	m_sync_night->setChecked(m_settings.sync_night());
-	m_break_enabled->setChecked(m_settings.break_enabled());
-	m_work_minutes->setValue(m_settings.work_minutes());
-	m_break_minutes->setValue(m_settings.break_minutes());
-	m_break_message->setText(m_settings.break_message());
+	_mSyncBrightness->setChecked(_mSettings.syncBrightness());
+	_mSyncNight->setChecked(_mSettings.syncNight());
+	_mBreakEnabled->setChecked(_mSettings.breakEnabled());
+	_mWorkMinutes->setValue(_mSettings.workMinutes());
+	_mBreakMinutes->setValue(_mSettings.breakMinutes());
+	_mBreakMessage->setText(_mSettings.breakMessage());
 
 	auto monitors = MonitorController::discover();
-	for(int i = 0; i < m_monitors.size(); ++i) {
-		auto&		mw	 = m_monitors[i];
-		const auto& name = mw.output_name;
+	for(int i = 0; i < _mMonitors.size(); ++i) {
+		auto&		mw	 = _mMonitors[i];
+		const auto& name = mw._outputName;
 
 		// Check if this monitor has saved settings
 		bool found		 = false;
-		for(const auto& ms : m_settings.monitors()) {
-			if(ms.name == name) {
+		for(const auto& ms : _mSettings.monitors()) {
+			if(ms._name == name) {
 				found = true;
-				mw.brightness_slider->setValue(ms.brightness);
-				mw.night_mode->setChecked(ms.night_mode);
-				mw.warmth_container->setVisible(ms.night_mode);
-				if(ms.night_mode) {
-					mw.warmth_slider->setValue(ms.warmth);
+				mw._brightnessSlider->setValue(ms._brightness);
+				mw._nightMode->setChecked(ms._nightMode);
+				mw._warmthContainer->setVisible(ms._nightMode);
+				if(ms._nightMode) {
+					mw._warmthSlider->setValue(ms._warmth);
 				}
 				break;
 			}
@@ -584,85 +584,85 @@ void MainWindow::load_settings() {
 		if(!found) {
 			// Use current xrandr state
 			auto mi = std::find_if(
-				monitors.begin(), monitors.end(), [&](const MonitorInfo& m) { return m.name == name; });
+				monitors.begin(), monitors.end(), [&](const MonitorInfo& m) { return m._name == name; });
 			if(mi != monitors.end()) {
-				int br = static_cast<int>(mi->brightness * 100.0);
+				int br = static_cast<int>(mi->_brightness * 100.0);
 				br	   = std::clamp(br, BRIGHTNESS_MIN, BRIGHTNESS_MAX);
-				mw.brightness_slider->setValue(br);
+				mw._brightnessSlider->setValue(br);
 
-				uint16_t k = estimate_kelvin(mi->gamma_r, mi->gamma_g, mi->gamma_b);
+				uint16_t k = estimateKelvin(mi->_gammaR, mi->_gammaG, mi->_gammaB);
 				if(k != 6500) {
-					mw.night_mode->setChecked(true);
-					mw.warmth_container->setVisible(true);
-					mw.warmth_slider->setValue(static_cast<int>(k));
+					mw._nightMode->setChecked(true);
+					mw._warmthContainer->setVisible(true);
+					mw._warmthSlider->setValue(static_cast<int>(k));
 				}
 			}
 		}
 	}
 
 	// Window geometry
-	auto geo = m_settings.window_geometry();
+	auto geo = _mSettings.windowGeometry();
 	if(!geo.isEmpty())
 		restoreGeometry(geo);
 
-	QString def				= m_settings.default_preset();
-	bool	default_applied = false;
+	QString def			   = _mSettings.defaultPreset();
+	bool	defaultApplied = false;
 	if(!def.isEmpty()) {
-		auto preset = m_presets.load(def);
+		auto preset = _mPresets.load(def);
 		if(!preset.isEmpty()) {
-			m_updating = false;	 // apply_preset sets its own guard
-			apply_preset(preset);
-			default_applied = true;
+			_mUpdating = false;	 // apply_preset sets its own guard
+			applyPreset(preset);
+			defaultApplied = true;
 		} else {
-			m_settings.set_default_preset(QString());
+			_mSettings.setDefaultPreset(QString());
 		}
 	}
 
-	m_updating = false;
-	refresh_preset_list();
+	_mUpdating = false;
+	refreshPresetList();
 
-	if(!default_applied) {
-		for(int i = 0; i < m_monitors.size(); ++i)
-			apply_monitor(i);
+	if(!defaultApplied) {
+		for(int i = 0; i < _mMonitors.size(); ++i)
+			applyMonitor(i);
 	}
 
 	// Persist UI state once after full initialization
-	save_settings();
+	saveSettings();
 }
 
-void MainWindow::save_settings() {
+void MainWindow::saveSettings() {
 	// Sync current UI state into SettingsManager
-	m_settings.set_sync_brightness(m_sync_brightness->isChecked());
-	m_settings.set_sync_night(m_sync_night->isChecked());
-	m_settings.set_break_enabled(m_break_enabled->isChecked());
-	m_settings.set_work_minutes(m_work_minutes->value());
-	m_settings.set_break_minutes(m_break_minutes->value());
-	m_settings.set_break_message(m_break_message->text().trimmed());
+	_mSettings.setSyncBrightness(_mSyncBrightness->isChecked());
+	_mSettings.setSyncNight(_mSyncNight->isChecked());
+	_mSettings.setBreakEnabled(_mBreakEnabled->isChecked());
+	_mSettings.setWorkMinutes(_mWorkMinutes->value());
+	_mSettings.setBreakMinutes(_mBreakMinutes->value());
+	_mSettings.setBreakMessage(_mBreakMessage->text().trimmed());
 
-	auto& monitors = m_settings.monitors();
+	auto& monitors = _mSettings.monitors();
 	monitors.clear();
-	for(const auto& mw : m_monitors) {
+	for(const auto& mw : _mMonitors) {
 		MonitorSettings ms;
-		ms.name		  = mw.output_name;
-		ms.brightness = mw.brightness_slider->value();
-		ms.night_mode = mw.night_mode->isChecked();
-		if(ms.night_mode)
-			ms.warmth = mw.warmth_slider->value();
+		ms._name	   = mw._outputName;
+		ms._brightness = mw._brightnessSlider->value();
+		ms._nightMode  = mw._nightMode->isChecked();
+		if(ms._nightMode)
+			ms._warmth = mw._warmthSlider->value();
 		monitors.append(ms);
 	}
 
-	m_settings.set_window_geometry(saveGeometry());
-	m_settings.save();
+	_mSettings.setWindowGeometry(saveGeometry());
+	_mSettings.save();
 }
 
 // ============================================================
 //  Preset Management
 // ============================================================
 
-void MainWindow::refresh_preset_list() {
-	m_preset_list->clear();
-	QString def	  = m_settings.default_preset();
-	auto	names = m_presets.list_presets();
+void MainWindow::refreshPresetList() {
+	_mPresetList->clear();
+	QString def	  = _mSettings.defaultPreset();
+	auto	names = _mPresets.listPresets();
 	for(const auto& name : names) {
 		auto  display = (name == def) ? QString("%1  (默认)").arg(name) : name;
 		auto* item	  = new QListWidgetItem(display);
@@ -672,12 +672,12 @@ void MainWindow::refresh_preset_list() {
 			item->setFont(f);
 		}
 		item->setData(Qt::UserRole, name);	// store real name for operations
-		m_preset_list->addItem(item);
+		_mPresetList->addItem(item);
 	}
 }
 
-void MainWindow::save_current_as_preset() {
-	QString name = m_preset_name_edit->text().trimmed();
+void MainWindow::saveCurrentAsPreset() {
+	QString name = _mPresetNameEdit->text().trimmed();
 	if(name.isEmpty()) {
 		QMessageBox::information(this, "提示", "请输入预设名称");
 		return;
@@ -686,31 +686,31 @@ void MainWindow::save_current_as_preset() {
 	// Build JSON from current UI state
 	QJsonObject preset;
 	preset["name"]			  = name;
-	preset["sync_brightness"] = m_sync_brightness->isChecked();
-	preset["sync_night"]	  = m_sync_night->isChecked();
+	preset["sync_brightness"] = _mSyncBrightness->isChecked();
+	preset["sync_night"]	  = _mSyncNight->isChecked();
 
-	QJsonObject break_settings;
-	break_settings["enabled"]		= m_break_enabled->isChecked();
-	break_settings["work_minutes"]	= m_work_minutes->value();
-	break_settings["break_minutes"] = m_break_minutes->value();
-	break_settings["message"]		= m_break_message->text().trimmed();
-	preset["break"]					= break_settings;
+	QJsonObject breakSettings;
+	breakSettings["enabled"]	   = _mBreakEnabled->isChecked();
+	breakSettings["work_minutes"]  = _mWorkMinutes->value();
+	breakSettings["break_minutes"] = _mBreakMinutes->value();
+	breakSettings["message"]	   = _mBreakMessage->text().trimmed();
+	preset["break"]				   = breakSettings;
 
 	QJsonArray arr;
-	for(const auto& mw : m_monitors) {
+	for(const auto& mw : _mMonitors) {
 		QJsonObject obj;
-		obj["name"]		  = mw.output_name;
-		obj["brightness"] = mw.brightness_slider->value();
-		obj["night_mode"] = mw.night_mode->isChecked();
-		if(mw.night_mode->isChecked())
-			obj["warmth"] = mw.warmth_slider->value();
+		obj["name"]		  = mw._outputName;
+		obj["brightness"] = mw._brightnessSlider->value();
+		obj["night_mode"] = mw._nightMode->isChecked();
+		if(mw._nightMode->isChecked())
+			obj["warmth"] = mw._warmthSlider->value();
 		arr.append(obj);
 	}
 	preset["monitors"] = arr;
 
-	if(m_presets.save(name, preset)) {
-		m_preset_name_edit->clear();
-		refresh_preset_list();
+	if(_mPresets.save(name, preset)) {
+		_mPresetNameEdit->clear();
+		refreshPresetList();
 	} else {
 		QMessageBox::warning(this,
 							 QStringLiteral("保存失败"),
@@ -718,32 +718,32 @@ void MainWindow::save_current_as_preset() {
 	}
 }
 
-void MainWindow::load_selected_preset() {
-	auto items = m_preset_list->selectedItems();
+void MainWindow::loadSelectedPreset() {
+	auto items = _mPresetList->selectedItems();
 	if(items.isEmpty())
 		return;
 
 	QString name   = items[0]->data(Qt::UserRole).toString();
-	auto	preset = m_presets.load(name);
+	auto	preset = _mPresets.load(name);
 	if(preset.isEmpty())
 		return;
 
-	apply_preset(preset);
-	save_settings();
+	applyPreset(preset);
+	saveSettings();
 }
 
-void MainWindow::on_preset_list_double_clicked(QListWidgetItem* item) {
+void MainWindow::onPresetListDoubleClicked(QListWidgetItem* item) {
 	QString name   = item->data(Qt::UserRole).toString();
-	auto	preset = m_presets.load(name);
+	auto	preset = _mPresets.load(name);
 	if(preset.isEmpty())
 		return;
 
-	apply_preset(preset);
-	save_settings();
+	applyPreset(preset);
+	saveSettings();
 }
 
-void MainWindow::delete_selected_preset() {
-	auto items = m_preset_list->selectedItems();
+void MainWindow::deleteSelectedPreset() {
+	auto items = _mPresetList->selectedItems();
 	if(items.isEmpty())
 		return;
 
@@ -754,73 +754,73 @@ void MainWindow::delete_selected_preset() {
 										  QMessageBox::Yes | QMessageBox::No);
 
 	if(reply == QMessageBox::Yes) {
-		m_presets.remove(name);
-		if(m_settings.default_preset() == name)
-			m_settings.set_default_preset(QString());
-		refresh_preset_list();
-		save_settings();
+		_mPresets.remove(name);
+		if(_mSettings.defaultPreset() == name)
+			_mSettings.setDefaultPreset(QString());
+		refreshPresetList();
+		saveSettings();
 	}
 }
 
-void MainWindow::set_selected_as_default() {
-	auto items = m_preset_list->selectedItems();
+void MainWindow::setSelectedAsDefault() {
+	auto items = _mPresetList->selectedItems();
 	if(items.isEmpty())
 		return;
 
 	QString name = items[0]->data(Qt::UserRole).toString();
-	m_settings.set_default_preset(name);
-	refresh_preset_list();
-	save_settings();
+	_mSettings.setDefaultPreset(name);
+	refreshPresetList();
+	saveSettings();
 
 	auto status = statusBar();
 	if(status)
 		status->showMessage(QString("已将 \"%1\" 设为默认预设").arg(name), 3000);
 }
 
-void MainWindow::apply_preset(const QJsonObject& preset) {
-	m_updating = true;
+void MainWindow::applyPreset(const QJsonObject& preset) {
+	_mUpdating = true;
 
-	m_sync_brightness->setChecked(preset["sync_brightness"].toBool(false));
-	m_sync_night->setChecked(preset["sync_night"].toBool(false));
+	_mSyncBrightness->setChecked(preset["sync_brightness"].toBool(false));
+	_mSyncNight->setChecked(preset["sync_night"].toBool(false));
 
-	set_break_controls(preset.value("break").toObject());
+	setBreakControls(preset.value("break").toObject());
 
 	auto arr = preset["monitors"].toArray();
 	for(const auto& val : arr) {
-		auto obj	  = val.toObject();
-		auto mon_name = obj["name"].toString();
-		for(int i = 0; i < m_monitors.size(); ++i) {
-			if(m_monitors[i].output_name != mon_name)
+		auto obj	 = val.toObject();
+		auto monName = obj["name"].toString();
+		for(int i = 0; i < _mMonitors.size(); ++i) {
+			if(_mMonitors[i]._outputName != monName)
 				continue;
 
-			auto& mw = m_monitors[i];
-			mw.brightness_slider->setValue(obj["brightness"].toInt(100));
+			auto& mw = _mMonitors[i];
+			mw._brightnessSlider->setValue(obj["brightness"].toInt(100));
 
 			bool night = obj["night_mode"].toBool(false);
-			mw.night_mode->setChecked(night);
-			mw.warmth_container->setVisible(night);
+			mw._nightMode->setChecked(night);
+			mw._warmthContainer->setVisible(night);
 
 			if(night) {
-				mw.warmth_slider->setValue(obj["warmth"].toInt(5000));
+				mw._warmthSlider->setValue(obj["warmth"].toInt(5000));
 			}
 			break;
 		}
 	}
 
-	m_updating = false;
+	_mUpdating = false;
 
-	for(int i = 0; i < m_monitors.size(); ++i)
-		apply_monitor(i);
-	on_break_settings_changed();
+	for(int i = 0; i < _mMonitors.size(); ++i)
+		applyMonitor(i);
+	onBreakSettingsChanged();
 }
 
-void MainWindow::set_break_controls(const QJsonObject& settings) {
+void MainWindow::setBreakControls(const QJsonObject& settings) {
 	if(settings.contains("enabled"))
-		m_break_enabled->setChecked(settings.value("enabled").toBool(true));
+		_mBreakEnabled->setChecked(settings.value("enabled").toBool(true));
 	if(settings.contains("work_minutes"))
-		m_work_minutes->setValue(settings.value("work_minutes").toInt(m_work_minutes->value()));
+		_mWorkMinutes->setValue(settings.value("work_minutes").toInt(_mWorkMinutes->value()));
 	if(settings.contains("break_minutes"))
-		m_break_minutes->setValue(settings.value("break_minutes").toInt(m_break_minutes->value()));
+		_mBreakMinutes->setValue(settings.value("break_minutes").toInt(_mBreakMinutes->value()));
 	if(settings.contains("message"))
-		m_break_message->setText(settings.value("message").toString());
+		_mBreakMessage->setText(settings.value("message").toString());
 }

@@ -9,21 +9,21 @@
 #include <QStandardPaths>
 
 SettingsManager::SettingsManager() {
-	auto dir = config_dir();
+	auto dir = configDir();
 	QDir().mkpath(dir);
-	m_file_path = dir + "/settings.json";
+	_mFilePath = dir + "/settings.json";
 }
 
-QString SettingsManager::config_dir() {
+QString SettingsManager::configDir() {
 	return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/screen-light-adjust";
 }
 
-QVector<MonitorSettings>& SettingsManager::monitors() { return m_monitors; }
+QVector<MonitorSettings>& SettingsManager::monitors() { return _mMonitors; }
 
-const QVector<MonitorSettings>& SettingsManager::monitors() const { return m_monitors; }
+const QVector<MonitorSettings>& SettingsManager::monitors() const { return _mMonitors; }
 
 void SettingsManager::load() {
-	QFile file(m_file_path);
+	QFile file(_mFilePath);
 	if(!file.open(QIODevice::ReadOnly))
 		return;	 // First launch, use defaults
 
@@ -31,61 +31,61 @@ void SettingsManager::load() {
 	if(doc.isNull() || !doc.isObject())
 		return;
 
-	auto root		  = doc.object();
+	auto root		 = doc.object();
 
-	m_sync_brightness = root.value("sync_brightness").toBool(false);
-	m_sync_night	  = root.value("sync_night").toBool(false);
-	m_default_preset  = root.value("default_preset").toString();
-	m_break_enabled	  = root.value("break_enabled").toBool(true);
-	m_work_minutes	  = root.value("work_minutes").toInt(120);
-	m_break_minutes	  = root.value("break_minutes").toInt(20);
-	m_break_message =
+	_mSyncBrightness = root.value("sync_brightness").toBool(false);
+	_mSyncNight		 = root.value("sync_night").toBool(false);
+	_mDefaultPreset	 = root.value("default_preset").toString();
+	_mBreakEnabled	 = root.value("break_enabled").toBool(true);
+	_mWorkMinutes	 = root.value("work_minutes").toInt(120);
+	_mBreakMinutes	 = root.value("break_minutes").toInt(20);
+	_mBreakMessage =
 		root.value("break_message").toString(QStringLiteral("该休息一下了，眺望远方并活动身体。"));
 
 	auto geo = root.value("window_geometry").toString();
 	if(!geo.isEmpty())
-		m_window_geometry = QByteArray::fromBase64(geo.toLatin1());
+		_mWindowGeometry = QByteArray::fromBase64(geo.toLatin1());
 
-	m_monitors.clear();
+	_mMonitors.clear();
 	auto arr = root.value("monitors").toArray();
 	for(const auto& val : arr) {
 		auto			obj = val.toObject();
 		MonitorSettings ms;
-		ms.name		  = obj.value("name").toString();
-		ms.brightness = obj.value("brightness").toInt(100);
-		ms.night_mode = obj.value("night_mode").toBool(false);
-		ms.warmth	  = obj.value("warmth").toInt(5000);
-		m_monitors.append(ms);
+		ms._name	   = obj.value("name").toString();
+		ms._brightness = obj.value("brightness").toInt(100);
+		ms._nightMode  = obj.value("night_mode").toBool(false);
+		ms._warmth	   = obj.value("warmth").toInt(5000);
+		_mMonitors.append(ms);
 	}
 }
 
 void SettingsManager::save() {
 	QJsonArray arr;
-	for(const auto& ms : m_monitors) {
+	for(const auto& ms : _mMonitors) {
 		QJsonObject obj;
-		obj["name"]		  = ms.name;
-		obj["brightness"] = ms.brightness;
-		obj["night_mode"] = ms.night_mode;
-		if(ms.night_mode)
-			obj["warmth"] = ms.warmth;
+		obj["name"]		  = ms._name;
+		obj["brightness"] = ms._brightness;
+		obj["night_mode"] = ms._nightMode;
+		if(ms._nightMode)
+			obj["warmth"] = ms._warmth;
 		arr.append(obj);
 	}
 
 	QJsonObject root;
 	root["version"]			= 2;
-	root["sync_brightness"] = m_sync_brightness;
-	root["sync_night"]		= m_sync_night;
-	root["default_preset"]	= m_default_preset;
-	root["break_enabled"]	= m_break_enabled;
-	root["work_minutes"]	= m_work_minutes;
-	root["break_minutes"]	= m_break_minutes;
-	root["break_message"]	= m_break_message;
+	root["sync_brightness"] = _mSyncBrightness;
+	root["sync_night"]		= _mSyncNight;
+	root["default_preset"]	= _mDefaultPreset;
+	root["break_enabled"]	= _mBreakEnabled;
+	root["work_minutes"]	= _mWorkMinutes;
+	root["break_minutes"]	= _mBreakMinutes;
+	root["break_message"]	= _mBreakMessage;
 	root["monitors"]		= arr;
 
-	if(!m_window_geometry.isEmpty())
-		root["window_geometry"] = QString::fromLatin1(m_window_geometry.toBase64());
+	if(!_mWindowGeometry.isEmpty())
+		root["window_geometry"] = QString::fromLatin1(_mWindowGeometry.toBase64());
 
-	QSaveFile file(m_file_path);
+	QSaveFile file(_mFilePath);
 	if(!file.open(QIODevice::WriteOnly))
 		return;
 

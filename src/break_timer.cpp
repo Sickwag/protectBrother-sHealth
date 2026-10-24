@@ -3,65 +3,65 @@
 #include <algorithm>
 
 namespace {
-constexpr int kMinimumMinutes = 1;
-constexpr int kMaximumMinutes = 150;
+constexpr int K_MINIMUM_MINUTES = 1;
+constexpr int K_MAXIMUM_MINUTES = 150;
 }  // namespace
 
-BreakTimer::BreakTimer(int work_minutes, int break_minutes, QObject* parent)
+BreakTimer::BreakTimer(int workMinutes, int breakMinutes, QObject* parent)
 	: QObject(parent)
-	, m_work_minutes(work_minutes)
-	, m_break_minutes(break_minutes) {
-	m_work_timer.setSingleShot(true);
-	m_break_timer.setSingleShot(true);
-	m_update_timer.setInterval(1000);
+	, _mWorkMinutes(workMinutes)
+	, _mBreakMinutes(breakMinutes) {
+	_mWorkTimer.setSingleShot(true);
+	_mBreakTimer.setSingleShot(true);
+	_mUpdateTimer.setInterval(1000);
 
-	connect(&m_work_timer, &QTimer::timeout, this, [this] { emit work_period_finished(m_break_minutes); });
-	connect(&m_break_timer, &QTimer::timeout, this, &BreakTimer::break_period_finished);
-	connect(&m_update_timer, &QTimer::timeout, this, [this] {
-		emit remaining_time_changed(remaining_time(), m_is_working);
+	connect(&_mWorkTimer, &QTimer::timeout, this, [this] { emit workPeriodFinished(_mBreakMinutes); });
+	connect(&_mBreakTimer, &QTimer::timeout, this, &BreakTimer::breakPeriodFinished);
+	connect(&_mUpdateTimer, &QTimer::timeout, this, [this] {
+		emit remainingTimeChanged(remainingTime(), _mIsWorking);
 	});
 
-	set_durations(work_minutes, break_minutes);
+	setDurations(workMinutes, breakMinutes);
 }
 
-void BreakTimer::set_durations(int work_minutes, int break_minutes) {
-	m_work_minutes	= std::clamp(work_minutes, kMinimumMinutes, kMaximumMinutes);
-	m_break_minutes = std::clamp(break_minutes, kMinimumMinutes, kMaximumMinutes);
+void BreakTimer::setDurations(int workMinutes, int breakMinutes) {
+	_mWorkMinutes  = std::clamp(workMinutes, K_MINIMUM_MINUTES, K_MAXIMUM_MINUTES);
+	_mBreakMinutes = std::clamp(breakMinutes, K_MINIMUM_MINUTES, K_MAXIMUM_MINUTES);
 }
 
-void BreakTimer::start_work() {
-	m_break_timer.stop();
-	m_is_working = true;
-	m_elapsed_timer.start();
-	m_work_timer.start(m_work_minutes * 60 * 1000);
-	m_update_timer.start();
-	emit remaining_time_changed(remaining_time(), m_is_working);
+void BreakTimer::startWork() {
+	_mBreakTimer.stop();
+	_mIsWorking = true;
+	_mElapsedTimer.start();
+	_mWorkTimer.start(_mWorkMinutes * 60 * 1000);
+	_mUpdateTimer.start();
+	emit remainingTimeChanged(remainingTime(), _mIsWorking);
 }
 
-void BreakTimer::start_break() {
-	m_work_timer.stop();
-	m_is_working = false;
-	m_elapsed_timer.start();
-	m_break_timer.start(m_break_minutes * 60 * 1000);
-	m_update_timer.start();
-	emit remaining_time_changed(remaining_time(), m_is_working);
+void BreakTimer::startBreak() {
+	_mWorkTimer.stop();
+	_mIsWorking = false;
+	_mElapsedTimer.start();
+	_mBreakTimer.start(_mBreakMinutes * 60 * 1000);
+	_mUpdateTimer.start();
+	emit remainingTimeChanged(remainingTime(), _mIsWorking);
 }
 
 void BreakTimer::stop() {
-	m_work_timer.stop();
-	m_break_timer.stop();
-	m_update_timer.stop();
+	_mWorkTimer.stop();
+	_mBreakTimer.stop();
+	_mUpdateTimer.stop();
 }
 
-QTime BreakTimer::remaining_time() const {
-	const bool timer_active = m_is_working ? m_work_timer.isActive() : m_break_timer.isActive();
-	if(!timer_active || !m_elapsed_timer.isValid())
+QTime BreakTimer::remainingTime() const {
+	const bool timerActive = _mIsWorking ? _mWorkTimer.isActive() : _mBreakTimer.isActive();
+	if(!timerActive || !_mElapsedTimer.isValid())
 		return QTime(0, 0, 0);
 
-	const int	 phase_minutes	   = m_is_working ? m_work_minutes : m_break_minutes;
-	const qint64 remaining_seconds = std::max<qint64>(
-		0, (static_cast<qint64>(phase_minutes) * 60 * 1000 - m_elapsed_timer.elapsed()) / 1000);
-	return QTime(static_cast<int>(remaining_seconds / 3600),
-				 static_cast<int>((remaining_seconds % 3600) / 60),
-				 static_cast<int>(remaining_seconds % 60));
+	const int	 phaseMinutes	  = _mIsWorking ? _mWorkMinutes : _mBreakMinutes;
+	const qint64 remainingSeconds = std::max<qint64>(
+		0, (static_cast<qint64>(phaseMinutes) * 60 * 1000 - _mElapsedTimer.elapsed()) / 1000);
+	return QTime(static_cast<int>(remainingSeconds / 3600),
+				 static_cast<int>((remainingSeconds % 3600) / 60),
+				 static_cast<int>(remainingSeconds % 60));
 }

@@ -18,8 +18,8 @@ namespace {
 class BreakWindow final : public QWidget {
   public:
 	BreakWindow(QScreen* screen, QString message, const QDateTime& deadline)
-		: m_message(std::move(message))
-		, m_deadline(deadline) {
+		: _mMessage(std::move(message))
+		, _mDeadline(deadline) {
 		setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
 		setWindowTitle(QStringLiteral("休息时间"));
 		setAttribute(Qt::WA_DeleteOnClose, false);
@@ -38,38 +38,38 @@ class BreakWindow final : public QWidget {
 		title->setAlignment(Qt::AlignCenter);
 		layout->addWidget(title);
 
-		m_message_label = new QLabel(m_message, this);
-		m_message_label->setObjectName(QStringLiteral("message"));
-		m_message_label->setAlignment(Qt::AlignCenter);
-		m_message_label->setWordWrap(true);
-		layout->addWidget(m_message_label);
+		_mMessageLabel = new QLabel(_mMessage, this);
+		_mMessageLabel->setObjectName(QStringLiteral("message"));
+		_mMessageLabel->setAlignment(Qt::AlignCenter);
+		_mMessageLabel->setWordWrap(true);
+		layout->addWidget(_mMessageLabel);
 
-		m_remaining_label = new QLabel(this);
-		m_remaining_label->setObjectName(QStringLiteral("remaining"));
-		m_remaining_label->setAlignment(Qt::AlignCenter);
-		layout->addWidget(m_remaining_label);
+		_mRemainingLabel = new QLabel(this);
+		_mRemainingLabel->setObjectName(QStringLiteral("remaining"));
+		_mRemainingLabel->setAlignment(Qt::AlignCenter);
+		layout->addWidget(_mRemainingLabel);
 		layout->addStretch();
 
 		setScreen(screen);
 		setGeometry(screen->geometry());
 		updateRemaining();
 
-		auto* refresh_timer = new QTimer(this);
-		refresh_timer->setInterval(1000);
-		connect(refresh_timer, &QTimer::timeout, this, [this] { updateRemaining(); });
-		refresh_timer->start();
+		auto* refreshTimer = new QTimer(this);
+		refreshTimer->setInterval(1000);
+		connect(refreshTimer, &QTimer::timeout, this, [this] { updateRemaining(); });
+		refreshTimer->start();
 	}
 
-	QString message() const { return m_message; }
+	QString message() const { return _mMessage; }
 
 	void dismiss() {
-		m_allow_close = true;
+		_mAllowClose = true;
 		close();
 	}
 
   protected:
 	void closeEvent(QCloseEvent* event) override {
-		if(m_allow_close)
+		if(_mAllowClose)
 			event->accept();
 		else
 			event->ignore();
@@ -79,36 +79,36 @@ class BreakWindow final : public QWidget {
 
   private:
 	void updateRemaining() {
-		const qint64 seconds		   = std::max<qint64>(0, QDateTime::currentDateTime().secsTo(m_deadline));
-		const auto	 minutes		   = seconds / 60;
-		const auto	 remaining_seconds = seconds % 60;
-		m_remaining_label->setText(QStringLiteral("休息剩余 %1:%2")
-									   .arg(minutes, 2, 10, QLatin1Char('0'))
-									   .arg(remaining_seconds, 2, 10, QLatin1Char('0')));
+		const qint64 seconds		  = std::max<qint64>(0, QDateTime::currentDateTime().secsTo(_mDeadline));
+		const auto	 minutes		  = seconds / 60;
+		const auto	 remainingSeconds = seconds % 60;
+		_mRemainingLabel->setText(QStringLiteral("休息剩余 %1:%2")
+									  .arg(minutes, 2, 10, QLatin1Char('0'))
+									  .arg(remainingSeconds, 2, 10, QLatin1Char('0')));
 	}
 
-	QString	  m_message;
-	QDateTime m_deadline;
-	QLabel*	  m_message_label	= nullptr;
-	QLabel*	  m_remaining_label = nullptr;
-	bool	  m_allow_close		= false;
+	QString	  _mMessage;
+	QDateTime _mDeadline;
+	QLabel*	  _mMessageLabel   = nullptr;
+	QLabel*	  _mRemainingLabel = nullptr;
+	bool	  _mAllowClose	   = false;
 };
 }  // namespace
 
 BreakReminder::BreakReminder(QObject* parent)
 	: QObject(parent) {
 	connect(qApp, &QGuiApplication::screenAdded, this, [this](QScreen* screen) {
-		if(m_active)
+		if(_mActive)
 			addWindow(screen);
 	});
 	connect(qApp, &QGuiApplication::screenRemoved, this, [this](QScreen* screen) {
-		for(auto it = m_windows.begin(); it != m_windows.end();) {
+		for(auto it = _mWindows.begin(); it != _mWindows.end();) {
 			auto* widget = it->data();
 			if(widget && widget->screen() == screen) {
 				auto* window = static_cast<BreakWindow*>(widget);
 				window->dismiss();
 				delete window;
-				it = m_windows.erase(it);
+				it = _mWindows.erase(it);
 			} else {
 				++it;
 			}
@@ -116,24 +116,24 @@ BreakReminder::BreakReminder(QObject* parent)
 	});
 }
 
-BreakReminder::~BreakReminder() { close_break(); }
+BreakReminder::~BreakReminder() { closeBreak(); }
 
-void BreakReminder::show_break(int break_minutes) {
-	show_break_with_message(break_minutes, QStringLiteral("请暂停工作，眺望远方并活动身体。"));
+void BreakReminder::showBreak(int breakMinutes) {
+	showBreakWithMessage(breakMinutes, QStringLiteral("请暂停工作，眺望远方并活动身体。"));
 }
 
-void BreakReminder::show_break_with_message(int break_minutes, const QString& message) {
-	show_break_on_screens(break_minutes, message, QGuiApplication::screens());
+void BreakReminder::showBreakWithMessage(int breakMinutes, const QString& message) {
+	showBreakOnScreens(breakMinutes, message, QGuiApplication::screens());
 }
 
-void BreakReminder::show_break_on_screens(int					 break_minutes,
-										  const QString&		 message,
-										  const QList<QScreen*>& screens) {
-	close_break();
-	m_message =
+void BreakReminder::showBreakOnScreens(int					  breakMinutes,
+									   const QString&		  message,
+									   const QList<QScreen*>& screens) {
+	closeBreak();
+	_mMessage =
 		message.trimmed().isEmpty() ? QStringLiteral("请暂停工作，眺望远方并活动身体。") : message.trimmed();
-	m_deadline = QDateTime::currentDateTime().addSecs(std::max(1, break_minutes) * 60);
-	m_active   = true;
+	_mDeadline = QDateTime::currentDateTime().addSecs(std::max(1, breakMinutes) * 60);
+	_mActive   = true;
 
 	for(auto* screen : screens)
 		addWindow(screen);
@@ -143,33 +143,33 @@ void BreakReminder::addWindow(QScreen* screen) {
 	if(!screen)
 		return;
 
-	auto* window = new BreakWindow(screen, m_message, m_deadline);
-	m_windows.append(window);
+	auto* window = new BreakWindow(screen, _mMessage, _mDeadline);
+	_mWindows.append(window);
 	window->showFullScreen();
 	window->raise();
 }
 
-void BreakReminder::close_break() {
-	m_active = false;
-	for(const auto& guarded_window : m_windows) {
-		if(auto* widget = guarded_window.data()) {
+void BreakReminder::closeBreak() {
+	_mActive = false;
+	for(const auto& guardedWindow : _mWindows) {
+		if(auto* widget = guardedWindow.data()) {
 			static_cast<BreakWindow*>(widget)->dismiss();
 			delete widget;
 		}
 	}
-	m_windows.clear();
+	_mWindows.clear();
 }
 
-int BreakReminder::visible_window_count() const {
-	return static_cast<int>(std::count_if(m_windows.cbegin(), m_windows.cend(), [](const auto& window) {
+int BreakReminder::visibleWindowCount() const {
+	return static_cast<int>(std::count_if(_mWindows.cbegin(), _mWindows.cend(), [](const auto& window) {
 		return window && window->isVisible();
 	}));
 }
 
-QStringList BreakReminder::visible_messages() const {
+QStringList BreakReminder::visibleMessages() const {
 	QStringList messages;
-	for(const auto& guarded_window : m_windows) {
-		if(const auto* widget = guarded_window.data()) {
+	for(const auto& guardedWindow : _mWindows) {
+		if(const auto* widget = guardedWindow.data()) {
 			if(widget->isVisible())
 				messages.append(static_cast<const BreakWindow*>(widget)->message());
 		}

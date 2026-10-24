@@ -7,18 +7,18 @@
 #include <QSaveFile>
 
 PresetManager::PresetManager() {
-	m_dir_path = SettingsManager::config_dir() + "/presets";
-	QDir().mkpath(m_dir_path);
+	_mDirPath = SettingsManager::configDir() + "/presets";
+	QDir().mkpath(_mDirPath);
 }
 
-QString PresetManager::preset_file_path(const QString& name) const {
+QString PresetManager::presetFilePath(const QString& name) const {
 	if(name.isEmpty() || name == "." || name == ".." || name.contains('/') || name.contains('\\'))
 		return {};
-	return QDir(m_dir_path).filePath(name + ".json");
+	return QDir(_mDirPath).filePath(name + ".json");
 }
 
-QStringList PresetManager::list_presets() {
-	QDir dir(m_dir_path);
+QStringList PresetManager::listPresets() {
+	QDir dir(_mDirPath);
 	auto entries = dir.entryList({"*.json"}, QDir::Files, QDir::Name);
 
 	QStringList names;
@@ -28,7 +28,7 @@ QStringList PresetManager::list_presets() {
 }
 
 bool PresetManager::save(const QString& name, const QJsonObject& data) {
-	const auto path = preset_file_path(name);
+	const auto path = presetFilePath(name);
 	if(path.isEmpty())
 		return false;
 
@@ -41,7 +41,7 @@ bool PresetManager::save(const QString& name, const QJsonObject& data) {
 }
 
 QJsonObject PresetManager::load(const QString& name) {
-	const auto path = preset_file_path(name);
+	const auto path = presetFilePath(name);
 	if(path.isEmpty())
 		return {};
 
@@ -56,11 +56,11 @@ QJsonObject PresetManager::load(const QString& name) {
 }
 
 bool PresetManager::remove(const QString& name) {
-	const auto path = preset_file_path(name);
+	const auto path = presetFilePath(name);
 	return !path.isEmpty() && QFile::remove(path);
 }
 
 bool PresetManager::exists(const QString& name) {
-	const auto path = preset_file_path(name);
+	const auto path = presetFilePath(name);
 	return !path.isEmpty() && QFile::exists(path);
 }

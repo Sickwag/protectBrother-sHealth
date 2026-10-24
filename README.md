@@ -1,39 +1,38 @@
-# Screen Light Adjust
-
-Screen Light Adjust 把显示器亮度/色温控制和定时休息提醒放在一个 Qt 桌面程序中。预设会同时保存这两类设置，选中一个预设后可一键应用。
+# Protect Brother's Health
+Protect Brother's Health 是一个 Qt 桌面护眼工具，将多显示器亮度/色温控制、定时全屏休息提醒和统一预设放在一个应用中。当前可执行文件与安装包名称仍为 `screen-light-adjust`。
 ## 功能
-- X11：使用 `xrandr` 逐输出调整亮度和色温。
-- Wayland：使用 `redshift`，缺少时尝试 `gammastep`；色温和软件亮度按所有输出统一调整。
-- 休息提醒：工作周期结束后，在 Qt 检测到的每个屏幕上显示相同的自定义提示，休息结束后自动开始下一轮。
-- 预设：保存显示器、同步选项、提醒启用状态、工作/休息时长和提示语；设置默认预设后，每次启动都会自动应用。
-- 托盘：通过 `QSystemTrayIcon` 注册图标，支持 XEmbed 或 StatusNotifierItem 的桌面托盘服务。
-## 桌面环境
-X11 下显示控制按屏幕输出分别应用。Wayland 没有通用的屏幕色温接口；显示调整依赖合成器提供 Redshift 所需的 gamma-control 后端，Wayland 页面提供全局显示设置。休息提醒使用 Qt 的每屏全屏窗口；窗口置顶、抢焦点等行为仍由合成器策略决定。
-Qt 托盘图标需要桌面提供兼容的托盘宿主。i3 环境应启用 i3bar 托盘（例如 `tray_output primary`）；如果桌面没有托盘服务，程序会留在主窗口而不会悄悄隐藏，关闭窗口会退出应用。
-Wayland 色温依赖合成器提供的 gamma-control 协议；无法连接时，应用会在状态栏显示错误。协议不可用的合成器仍可使用定时休息提醒。
-
-## 项目结构
-
-- `include/`：显示控制、统一预设、休息计时和多屏提醒的公共头文件。
-- `src/`：应用入口和功能实现；功能代码由 `screen-light-adjust-core` 目标统一编译。
-- `tests/`：统一预设、计时和多屏提醒检查。
-- `resources/`：桌面入口、图标和 Qt 插件路径配置。
-- `cmake/`：DEB 安装与卸载脚本。
-
+- **多显示器亮度与色温**：显示器列表按输出分别展示；亮度支持 `10%–200%`，色温支持 `1000–7500 K`，滑块和数值输入框可以精细调整。
+- **同步调节**：可分别同步所有显示器的亮度和护眼/色温设置，也可逐个显示器独立配置。
+- **定时休息**：设置工作时长、休息时长和提示语；计时结束后在 Qt 检测到的每个屏幕显示相同的全屏休息提示，倒计时结束后自动开始下一轮。
+- **统一预设**：将各显示器的亮度、护眼状态、色温、同步选项和休息设置保存为预设，可一键应用，也可设置默认预设并在应用启动时自动加载。
+- **系统托盘**：托盘菜单提供白天模式、护眼模式、显示/隐藏窗口和退出操作。关闭主窗口时，若托盘可用则最小化到托盘。
+- **配置持久化**：应用设置与预设保存在用户配置目录中，重启后继续使用已保存的设置。
+## 显示控制与桌面环境
+- **X11**：通过 `xrandr` 发现显示输出，并分别应用亮度和色温。
+- **Wayland**：通过 `redshift` 调整；若不可用则尝试 `gammastep`。Wayland 没有通用的逐显示器色温接口，因此当前色温和软件亮度按合成器支持的方式全局应用。
+- **休息窗口**：使用 Qt 的屏幕列表创建全屏窗口。窗口所在屏幕、置顶和焦点行为仍受窗口管理器或 Wayland 合成器策略影响。
+- **托盘**：需要桌面提供 XEmbed 或 StatusNotifierItem 托盘宿主。i3 可启用 i3bar 托盘；如果桌面没有托盘服务，关闭主窗口会退出应用。
+## 配置与预设
+- 主配置：`$XDG_CONFIG_HOME/screen-light-adjust/settings.json`；未设置 `XDG_CONFIG_HOME` 时为 `~/.config/screen-light-adjust/settings.json`。
+- 预设目录：主配置目录下的 `presets/`，每个预设单独保存。
+- 删除当前默认预设后，应用会清除对应的默认设置。
 ## 构建
-需要 Qt 6 Widgets、CMake 3.16 及 C++17 编译器。设置 `QT_HOME_PATH` 指向 Qt 安装目录。
+需要 Qt 6.4 或更新版本的 Widgets 模块、CMake 3.16 或更新版本，以及 C++17 编译器。使用 Qt 官方安装器提供的 Qt 时，设置 `QT_HOME_PATH` 指向对应的 Qt 安装目录：
 ```bash
-cmake -S . -B build -DCMAKE_PREFIX_PATH="$QT_HOME_PATH" -DCMAKE_BUILD_TYPE=Debug
-cmake --build build
-ctest --test-dir build --output-on-failure
+cmake -S . -B build/dev \
+  -DCMAKE_PREFIX_PATH="$QT_HOME_PATH" \
+  -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/dev
+ctest --test-dir build/dev --output-on-failure
 ```
-## 安装包
-DEB/RPM 必须使用目标发行版提供的 Qt 开发库构建。若开发环境通过 QT_HOME_PATH 使用了单独安装的 Qt，请使用新的构建目录并启用系统 Qt：
-
-    cmake -S . -B build/package -DSCREEN_LIGHT_ADJUST_USE_SYSTEM_QT=ON -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
-    cmake --build build/package --target deb
-
-在 Fedora/RHEL 等 RPM 系统上，将最后一个目标改为 rpm。Debian/Ubuntu 构建需要 qt6-base-dev；Fedora/RHEL 构建需要发行版对应的 Qt 开发包。DEB/RPM 元数据声明 xrandr、redshift 和 gammastep 运行依赖，由系统包管理器在安装时一并安装。RPM 构建需要 rpmbuild；Qt Wayland 运行需要对应平台插件。
-## 配置文件
-- 应用配置：`$XDG_CONFIG_HOME/screen-light-adjust/settings.json`；未设置 `XDG_CONFIG_HOME` 时使用 `~/.config/screen-light-adjust/settings.json`。
-- 预设：同目录下的 `presets/<名称>.json`。
+## DEB/RPM 安装包
+DEB/RPM 使用目标发行版提供的 Qt 构建，以便安装包依赖系统运行库。即使开发机设置了 `QT_HOME_PATH`，打包时也要使用新的构建目录并启用系统 Qt。
+```bash
+cmake -S . -B build/package \
+  -DSCREEN_LIGHT_ADJUST_USE_SYSTEM_QT=ON \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DBUILD_TESTING=OFF
+cmake --build build/package --target deb
+```
+Debian/Ubuntu 构建需要 `qt6-base-dev`；安装本地 DEB 时可使用 `sudo apt install ./build/package/screen-light-adjust-1.1.1-Linux.deb`。包管理器会安装元数据中声明的运行依赖，包括 `xrandr`、`redshift`、`gammastep` 和 Qt 平台插件。
+Fedora/RHEL 等 RPM 系统需要发行版对应的 Qt 开发包和 `rpmbuild`，将最后一个构建目标改为 `rpm`。Qt Wayland 运行还需要发行版提供的 Qt Wayland 平台插件。

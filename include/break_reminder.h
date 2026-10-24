@@ -15,19 +15,19 @@ class BreakReminder : public QObject {
 	explicit BreakReminder(QObject* parent = nullptr);
 	~BreakReminder() override;
 
-	void show_break(int break_minutes);
-	void show_break_with_message(int break_minutes, const QString& message);
-	void show_break_on_screens(int break_minutes, const QString& message, const QList<QScreen*>& screens);
-	void close_break();
+	void showBreak(int breakMinutes);
+	void showBreakWithMessage(int breakMinutes, const QString& message);
+	void showBreakOnScreens(int breakMinutes, const QString& message, const QList<QScreen*>& screens);
+	void closeBreak();
 
-	int			visible_window_count() const;
-	QStringList visible_messages() const;
+	int			visibleWindowCount() const;
+	QStringList visibleMessages() const;
 
   private:
 	void addWindow(QScreen* screen);
 
-	QList<QPointer<QWidget>> m_windows;
-	QString					 m_message;
-	QDateTime				 m_deadline;
-	bool					 m_active = false;
+	QList<QPointer<QWidget>> _mWindows;
+	QString					 _mMessage;
+	QDateTime				 _mDeadline;
+	bool					 _mActive = false;
 };

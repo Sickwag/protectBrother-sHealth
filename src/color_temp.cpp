@@ -4,7 +4,7 @@
 
 static double clamp01(double v) { return std::clamp(v, 0.0, 1.0); }
 
-RGB kelvin_to_rgb(uint16_t kelvin) {
+RGB kelvinToRgb(uint16_t kelvin) {
 	kelvin	 = std::clamp<uint16_t>(kelvin, 1000, 7500);
 	double t = kelvin / 100.0;
 
@@ -32,7 +32,7 @@ RGB kelvin_to_rgb(uint16_t kelvin) {
 	return {clamp01(r / 255.0), clamp01(g / 255.0), clamp01(b / 255.0)};
 }
 
-uint16_t estimate_kelvin(double r, double g, double b) {
+uint16_t estimateKelvin(double r, double g, double b) {
 	// Neutral check: if all channels within 5% of 1.0
 	if(std::abs(r - 1.0) < 0.05 && std::abs(g - 1.0) < 0.05 && std::abs(b - 1.0) < 0.05) {
 		return 6500;
@@ -43,8 +43,8 @@ uint16_t estimate_kelvin(double r, double g, double b) {
 	uint16_t lo = 1000, hi = 7500;
 	while(hi - lo > 50) {
 		uint16_t mid = (lo + hi) / 2;
-		auto	 rgb = kelvin_to_rgb(mid);
-		if(rgb.b < b)
+		auto	 rgb = kelvinToRgb(mid);
+		if(rgb._b < b)
 			lo = mid;
 		else
 			hi = mid;
