@@ -354,6 +354,7 @@ void MainWindow::setupBreakScheduler() {
 	connect(_mTimer, &BreakTimer::workPeriodFinished, this, &MainWindow::onWorkPeriodFinished);
 	connect(_mTimer, &BreakTimer::breakPeriodFinished, this, &MainWindow::onBreakPeriodFinished);
 	connect(_mTimer, &BreakTimer::remainingTimeChanged, this, &MainWindow::updateCountdown);
+	connect(_mBreakReminder, &BreakReminder::skipConfirmed, this, &MainWindow::onBreakPeriodFinished);
 
 	if(_mBreakEnabled->isChecked())
 		_mTimer->startWork();

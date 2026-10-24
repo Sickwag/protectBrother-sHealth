@@ -23,11 +23,16 @@ class BreakReminder : public QObject {
 	int			visibleWindowCount() const;
 	QStringList visibleMessages() const;
 
+  signals:
+	void skipConfirmed();
+
   private:
 	void addWindow(QScreen* screen);
+	void showSkipConfirmation(QWidget* parentWindow);
 
 	QList<QPointer<QWidget>> _mWindows;
 	QString					 _mMessage;
 	QDateTime				 _mDeadline;
-	bool					 _mActive = false;
+	bool					 _mActive				= false;
+	bool					 _mSkipConfirmationOpen = false;
 };

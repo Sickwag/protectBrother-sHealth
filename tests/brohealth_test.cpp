@@ -3,12 +3,16 @@
 #include "preset_manager.h"
 #include "settings_manager.h"
 
+#include <QAbstractButton>
 #include <QApplication>
 #include <QDir>
 #include <QFile>
 #include <QJsonObject>
+#include <QMessageBox>
 #include <QScreen>
+#include <QSignalSpy>
 #include <QStandardPaths>
+#include <QTimer>
 #include <QtTest>
 
 class ProtectBrothersHealthTest : public QObject {
@@ -18,6 +22,9 @@ class ProtectBrothersHealthTest : public QObject {
 	void reminderCreatesOneWindowPerScreen();
 	void reminderUsesTheSameMessageOnEveryScreen();
 	void reminderWindowsCoverTheirTargetScreens();
+	void escapeConfirmationDefaultsToContinue();
+	void mouseClickConfirmsBreakSkip();
+	void closingBreakCancelsSkipConfirmation();
 	void timerTracksWorkAndBreakPhases();
 	void migratesLegacyConfigurationDirectory();
 	void settingsPersistBreakOptionsAndDefaultPreset();
@@ -77,6 +84,111 @@ void ProtectBrothersHealthTest::reminderWindowsCoverTheirTargetScreens() {
 	}
 
 	reminder.closeBreak();
+}
+
+void ProtectBrothersHealthTest::escapeConfirmationDefaultsToContinue() {
+	const auto screens = QGuiApplication::screens();
+	QVERIFY(!screens.isEmpty());
+
+	BreakReminder reminder;
+	QSignalSpy	  skipSpy(&reminder, &BreakReminder::skipConfirmed);
+	QVERIFY(skipSpy.isValid());
+	reminder.showBreakOnScreens(1, QStringLiteral("请休息一下"), screens);
+	QApplication::processEvents();
+
+	QWidget* breakWindow = nullptr;
+	for(auto* widget : QApplication::topLevelWidgets()) {
+		if(widget->windowTitle() == QStringLiteral("休息时间")) {
+			breakWindow = widget;
+			break;
+		}
+	}
+	QVERIFY(breakWindow);
+
+	bool   continuePromptShown = false;
+	QTimer continueWithEnter;
+	continueWithEnter.setSingleShot(true);
+	connect(&continueWithEnter, &QTimer::timeout, &reminder, [&continuePromptShown] {
+		auto* dialog = qobject_cast<QMessageBox*>(QApplication::activeModalWidget());
+		if(dialog) {
+			continuePromptShown = true;
+			QTest::keyClick(dialog, Qt::Key_Return);
+		}
+	});
+	continueWithEnter.start();
+	QTest::keyClick(breakWindow, Qt::Key_Escape);
+	QTRY_VERIFY(continuePromptShown);
+
+	QCOMPARE(skipSpy.count(), 0);
+	QCOMPARE(reminder.visibleWindowCount(), screens.size());
+
+	reminder.closeBreak();
+}
+
+void ProtectBrothersHealthTest::mouseClickConfirmsBreakSkip() {
+	const auto screens = QGuiApplication::screens();
+	QVERIFY(!screens.isEmpty());
+
+	BreakReminder reminder;
+	QSignalSpy	  skipSpy(&reminder, &BreakReminder::skipConfirmed);
+	QVERIFY(skipSpy.isValid());
+	reminder.showBreakOnScreens(1, QStringLiteral("请休息一下"), screens);
+	QApplication::processEvents();
+
+	QWidget* breakWindow = nullptr;
+	for(auto* widget : QApplication::topLevelWidgets()) {
+		if(widget->windowTitle() == QStringLiteral("休息时间")) {
+			breakWindow = widget;
+			break;
+		}
+	}
+	QVERIFY(breakWindow);
+
+	bool   skipButtonClicked = false;
+	QTimer clickSkipButton;
+	clickSkipButton.setSingleShot(true);
+	connect(&clickSkipButton, &QTimer::timeout, &reminder, [&skipButtonClicked] {
+		auto* dialog = qobject_cast<QMessageBox*>(QApplication::activeModalWidget());
+		if(!dialog)
+			return;
+		for(auto* button : dialog->buttons()) {
+			if(button->text() == QStringLiteral("确认跳过")) {
+				QTest::mouseClick(button, Qt::LeftButton);
+				skipButtonClicked = true;
+				return;
+			}
+		}
+	});
+	clickSkipButton.start();
+	QTest::keyClick(breakWindow, Qt::Key_Escape);
+	QTRY_VERIFY(skipButtonClicked);
+	QTRY_COMPARE(skipSpy.count(), 1);
+	reminder.closeBreak();
+}
+
+void ProtectBrothersHealthTest::closingBreakCancelsSkipConfirmation() {
+	const auto screens = QGuiApplication::screens();
+	QVERIFY(!screens.isEmpty());
+
+	BreakReminder reminder;
+	reminder.showBreakOnScreens(1, QStringLiteral("请休息一下"), screens);
+	QApplication::processEvents();
+
+	QWidget* breakWindow = nullptr;
+	for(auto* widget : QApplication::topLevelWidgets()) {
+		if(widget->windowTitle() == QStringLiteral("休息时间")) {
+			breakWindow = widget;
+			break;
+		}
+	}
+	QVERIFY(breakWindow);
+
+	QTest::keyClick(breakWindow, Qt::Key_Escape);
+	QTRY_VERIFY(qobject_cast<QMessageBox*>(QApplication::activeModalWidget()));
+	reminder.closeBreak();
+
+	QCOMPARE(reminder.visibleWindowCount(), 0);
+	QTRY_VERIFY(QApplication::activeModalWidget() == nullptr);
 }
 
 void ProtectBrothersHealthTest::timerTracksWorkAndBreakPhases() {

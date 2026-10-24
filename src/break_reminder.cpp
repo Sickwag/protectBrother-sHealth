@@ -1,12 +1,17 @@
 #include "break_reminder.h"
 
+#include <QAbstractButton>
 #include <QApplication>
 #include <QCloseEvent>
 #include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QKeyEvent>
+#include <QKeySequence>
 #include <QLabel>
+#include <QMessageBox>
+#include <QPushButton>
 #include <QScreen>
+#include <QShortcut>
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -144,9 +149,48 @@ void BreakReminder::addWindow(QScreen* screen) {
 		return;
 
 	auto* window = new BreakWindow(screen, _mMessage, _mDeadline);
+	window->setAttribute(Qt::WA_QuitOnClose, false);
 	_mWindows.append(window);
+
+	auto* shortcut = new QShortcut(QKeySequence(Qt::Key_Escape), window);
+	shortcut->setAutoRepeat(false);
+	connect(shortcut, &QShortcut::activated, this, [this, window] { showSkipConfirmation(window); });
+
 	window->showFullScreen();
 	window->raise();
+}
+
+void BreakReminder::showSkipConfirmation(QWidget* parentWindow) {
+	if(_mSkipConfirmationOpen)
+		return;
+
+	_mSkipConfirmationOpen = true;
+	auto* dialog		   = new QMessageBox(parentWindow);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->setIcon(QMessageBox::Question);
+	dialog->setWindowTitle(QStringLiteral("确认跳过休息？"));
+	dialog->setText(QStringLiteral("兄弟，真的要跳过这次休息吗？"));
+	dialog->setInformativeText(QStringLiteral("请用鼠标点击「确认跳过」；否则继续休息。"));
+	dialog->setWindowModality(Qt::WindowModal);
+	dialog->setWindowFlag(Qt::WindowStaysOnTopHint);
+
+	auto* continueButton = dialog->addButton(QStringLiteral("继续休息"), QMessageBox::RejectRole);
+	auto* skipButton	 = dialog->addButton(QStringLiteral("确认跳过"), QMessageBox::AcceptRole);
+	dialog->setDefaultButton(continueButton);
+	dialog->setEscapeButton(continueButton);
+	skipButton->setAutoDefault(false);
+	skipButton->setDefault(false);
+	skipButton->setFocusPolicy(Qt::NoFocus);
+
+	const QPointer<QMessageBox> dialogGuard(dialog);
+	connect(dialog, &QMessageBox::finished, this, [this, dialogGuard, skipButton] {
+		const bool confirmed   = dialogGuard && dialogGuard->clickedButton() == skipButton;
+		_mSkipConfirmationOpen = false;
+		if(confirmed)
+			QTimer::singleShot(0, this, [this] { emit skipConfirmed(); });
+	});
+	connect(dialog, &QObject::destroyed, this, [this] { _mSkipConfirmationOpen = false; });
+	dialog->open();
 }
 
 void BreakReminder::closeBreak() {

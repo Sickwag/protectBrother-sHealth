@@ -20,6 +20,7 @@ if(BROHEALTH_USE_SYSTEM_QT)
     unset(Qt6Core_DIR CACHE)
     unset(Qt6Widgets_DIR CACHE)
     unset(Qt6Test_DIR CACHE)
+    unset(Qt6DBus_DIR CACHE)
 elseif(NOT "$ENV{QT_HOME_PATH}" STREQUAL "")
     list(APPEND CMAKE_PREFIX_PATH "$ENV{QT_HOME_PATH}")
     set(QT_PLUGIN_DIR "$ENV{QT_HOME_PATH}/plugins")
@@ -36,6 +37,9 @@ if(BROHEALTH_USE_SYSTEM_QT)
 endif()
 
 find_package(Qt6 6.4 REQUIRED COMPONENTS Widgets)
+if(UNIX AND NOT APPLE)
+    find_package(Qt6 6.4 REQUIRED COMPONENTS DBus)
+endif()
 include(CTest)
 
 if(BUILD_TESTING)
@@ -91,8 +95,16 @@ target_include_directories(brohealth-core
     PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(brohealth-core PUBLIC Qt6::Widgets)
 
-add_executable(brohealth src/main.cpp)
+add_executable(brohealth
+    include/platform_tray.h
+    src/main.cpp
+    src/platform_tray.cpp
+)
 target_link_libraries(brohealth PRIVATE brohealth-core)
+if(UNIX AND NOT APPLE)
+    target_link_libraries(brohealth PRIVATE Qt6::DBus)
+    target_compile_definitions(brohealth PRIVATE BROHEALTH_HAVE_DBUS=1)
+endif()
 
 set_target_properties(brohealth PROPERTIES
     INSTALL_RPATH ""
