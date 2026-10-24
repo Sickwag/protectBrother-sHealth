@@ -30,7 +30,7 @@ static constexpr int WARMTH_MAX		= 7500;
 MainWindow::MainWindow(QWidget* parent)
 	: QMainWindow(parent) {
 
-	setWindowTitle("Screen Light Adjust");
+	setWindowTitle("Protect Brother's Health");
 	setMinimumWidth(400);
 
 	for(const auto& mi : MonitorController::discover()) {
@@ -327,7 +327,7 @@ void MainWindow::setupTray() {
 	}
 
 	_mTrayIcon = new QSystemTrayIcon(QIcon(pix), this);
-	_mTrayIcon->setToolTip("Screen Light Adjust");
+	_mTrayIcon->setToolTip("Protect Brother's Health");
 	setWindowIcon(QIcon(pix));
 
 	auto* trayMenu = new QMenu(this);

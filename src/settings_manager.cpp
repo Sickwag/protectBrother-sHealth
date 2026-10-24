@@ -9,13 +9,18 @@
 #include <QStandardPaths>
 
 SettingsManager::SettingsManager() {
+	const auto configRoot = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+	QDir	   configRootDir(configRoot);
+	if(!QDir(configDir()).exists() && configRootDir.exists("screen-light-adjust"))
+		configRootDir.rename("screen-light-adjust", "brohealth");
+
 	auto dir = configDir();
 	QDir().mkpath(dir);
 	_mFilePath = dir + "/settings.json";
 }
 
 QString SettingsManager::configDir() {
-	return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/screen-light-adjust";
+	return QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + "/brohealth";
 }
 
 QVector<MonitorSettings>& SettingsManager::monitors() { return _mMonitors; }

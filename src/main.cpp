@@ -3,9 +3,9 @@
 
 int main(int argc, char* argv[]) {
 	QApplication app(argc, argv);
-	app.setApplicationName("Screen Light Adjust");
-	app.setOrganizationName("screen-light-adjust");
-	app.setDesktopFileName("screen-light-adjust");
+	app.setApplicationName("Protect Brother's Health");
+	app.setOrganizationName("ProtectBrothersHealth");
+	app.setDesktopFileName("brohealth");
 
 	MainWindow w;
 	w.show();

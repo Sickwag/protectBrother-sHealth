@@ -1,13 +1,13 @@
 [Desktop Entry]
 Type=Application
-Name=Screen Light Adjust
+Name=Protect Brother's Health
 GenericName=Screen and break settings
 Comment=Adjust screen brightness and color temperature, and schedule break reminders
-Exec=screen-light-adjust
-Icon=screen-light-adjust
+Exec=brohealth
+Icon=brohealth
 Categories=Settings;HardwareSettings;
 Keywords=screen;brightness;color temperature;break;reminder;护眼;显示器;休息;
 Terminal=false
 StartupNotify=false
-StartupWMClass=screen-light-adjust
+StartupWMClass=brohealth
 DBusActivatable=false

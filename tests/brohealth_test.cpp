@@ -4,11 +4,14 @@
 #include "settings_manager.h"
 
 #include <QApplication>
+#include <QDir>
+#include <QFile>
 #include <QJsonObject>
 #include <QScreen>
+#include <QStandardPaths>
 #include <QtTest>
 
-class ScreenLightAdjustTest : public QObject {
+class ProtectBrothersHealthTest : public QObject {
 	Q_OBJECT
 
   private slots:
@@ -16,12 +19,13 @@ class ScreenLightAdjustTest : public QObject {
 	void reminderUsesTheSameMessageOnEveryScreen();
 	void reminderWindowsCoverTheirTargetScreens();
 	void timerTracksWorkAndBreakPhases();
+	void migratesLegacyConfigurationDirectory();
 	void settingsPersistBreakOptionsAndDefaultPreset();
 	void presetsStoreDisplayAndBreakSettingsTogether();
 	void presetsRejectPathTraversalNames();
 };
 
-void ScreenLightAdjustTest::reminderCreatesOneWindowPerScreen() {
+void ProtectBrothersHealthTest::reminderCreatesOneWindowPerScreen() {
 	const auto screens = QGuiApplication::screens();
 	QVERIFY(!screens.isEmpty());
 
@@ -33,7 +37,7 @@ void ScreenLightAdjustTest::reminderCreatesOneWindowPerScreen() {
 	QCOMPARE(reminder.visibleWindowCount(), 0);
 }
 
-void ScreenLightAdjustTest::reminderUsesTheSameMessageOnEveryScreen() {
+void ProtectBrothersHealthTest::reminderUsesTheSameMessageOnEveryScreen() {
 	const auto screens = QGuiApplication::screens();
 	QVERIFY(!screens.isEmpty());
 
@@ -45,7 +49,7 @@ void ScreenLightAdjustTest::reminderUsesTheSameMessageOnEveryScreen() {
 	reminder.closeBreak();
 }
 
-void ScreenLightAdjustTest::reminderWindowsCoverTheirTargetScreens() {
+void ProtectBrothersHealthTest::reminderWindowsCoverTheirTargetScreens() {
 	const auto screens = QGuiApplication::screens();
 	QVERIFY(!screens.isEmpty());
 
@@ -75,7 +79,7 @@ void ScreenLightAdjustTest::reminderWindowsCoverTheirTargetScreens() {
 	reminder.closeBreak();
 }
 
-void ScreenLightAdjustTest::timerTracksWorkAndBreakPhases() {
+void ProtectBrothersHealthTest::timerTracksWorkAndBreakPhases() {
 	BreakTimer timer(50, 10);
 	QVERIFY(timer.isWorking());
 
@@ -89,7 +93,25 @@ void ScreenLightAdjustTest::timerTracksWorkAndBreakPhases() {
 	QCOMPARE(timer.remainingTime(), QTime(0, 0, 0));
 }
 
-void ScreenLightAdjustTest::settingsPersistBreakOptionsAndDefaultPreset() {
+void ProtectBrothersHealthTest::migratesLegacyConfigurationDirectory() {
+	const auto configRoot = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+	const auto legacyDir  = configRoot + "/screen-light-adjust";
+	QVERIFY(QDir().mkpath(legacyDir));
+
+	QFile legacySettings(legacyDir + "/settings.json");
+	QVERIFY(legacySettings.open(QIODevice::WriteOnly));
+	QVERIFY(legacySettings.write(R"({"default_preset":"legacy","work_minutes":45})") > 0);
+	legacySettings.close();
+
+	SettingsManager settings;
+	settings.load();
+	QCOMPARE(settings.defaultPreset(), QStringLiteral("legacy"));
+	QCOMPARE(settings.workMinutes(), 45);
+	QVERIFY(QFile::exists(SettingsManager::configDir() + "/settings.json"));
+	QVERIFY(!QDir(legacyDir).exists());
+}
+
+void ProtectBrothersHealthTest::settingsPersistBreakOptionsAndDefaultPreset() {
 	SettingsManager settings;
 	settings.setDefaultPreset(QStringLiteral("晚间"));
 	settings.setBreakEnabled(true);
@@ -107,7 +129,7 @@ void ScreenLightAdjustTest::settingsPersistBreakOptionsAndDefaultPreset() {
 	QCOMPARE(restored.breakMessage(), QStringLiteral("抬头看看远处"));
 }
 
-void ScreenLightAdjustTest::presetsStoreDisplayAndBreakSettingsTogether() {
+void ProtectBrothersHealthTest::presetsStoreDisplayAndBreakSettingsTogether() {
 	PresetManager	  presets;
 	const QJsonObject preset{
 		{QStringLiteral("sync_brightness"), true									},
@@ -126,7 +148,7 @@ void ScreenLightAdjustTest::presetsStoreDisplayAndBreakSettingsTogether() {
 	QVERIFY(presets.remove(QStringLiteral("unified")));
 }
 
-void ScreenLightAdjustTest::presetsRejectPathTraversalNames() {
+void ProtectBrothersHealthTest::presetsRejectPathTraversalNames() {
 	PresetManager presets;
 	QVERIFY(!presets.save(QStringLiteral("../outside"), {}));
 	QVERIFY(presets.load(QStringLiteral("../outside")).isEmpty());
@@ -139,9 +161,9 @@ int main(int argc, char* argv[]) {
 		return 2;
 	qputenv("XDG_CONFIG_HOME", configHome.path().toLocal8Bit());
 
-	QApplication		  app(argc, argv);
-	ScreenLightAdjustTest test;
+	QApplication			  app(argc, argv);
+	ProtectBrothersHealthTest test;
 	return QTest::qExec(&test, argc, argv);
 }
 
-#include "screen_light_adjust_test.moc"
+#include "brohealth_test.moc"
