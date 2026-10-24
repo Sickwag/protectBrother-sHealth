@@ -17,6 +17,9 @@ class BreakReminder : public QObject {
 
 	void showBreak(int breakMinutes);
 	void showBreakWithMessage(int breakMinutes, const QString& message);
+
+	void setActionPrompt(const QString& prompt) { _mActionPrompt = prompt; }
+
 	void showBreakOnScreens(int breakMinutes, const QString& message, const QList<QScreen*>& screens);
 	void closeBreak();
 
@@ -32,6 +35,7 @@ class BreakReminder : public QObject {
 
 	QList<QPointer<QWidget>> _mWindows;
 	QString					 _mMessage;
+	QString					 _mActionPrompt;
 	QDateTime				 _mDeadline;
 	bool					 _mActive				= false;
 	bool					 _mSkipConfirmationOpen = false;

@@ -1,12 +1,12 @@
 [Desktop Entry]
 Type=Application
 Name=Protect Brother's Health
-GenericName=Screen and break settings
-Comment=Adjust screen brightness and color temperature, and schedule break reminders
+GenericName=Brother health reminders
+Comment=Water and eye-break reminders, screen brightness and color temperature
 Exec=brohealth
 Icon=brohealth
 Categories=Settings;HardwareSettings;
-Keywords=screen;brightness;color temperature;break;reminder;护眼;显示器;休息;
+Keywords=screen;brightness;color temperature;water;hydration;break;reminder;喝水;护眼;显示器;休息;
 Terminal=false
 StartupNotify=false
 StartupWMClass=brohealth

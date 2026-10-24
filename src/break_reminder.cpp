@@ -17,14 +17,16 @@
 #include <QWidget>
 
 #include <algorithm>
+#include <functional>
 #include <utility>
 
 namespace {
 class BreakWindow final : public QWidget {
   public:
-	BreakWindow(QScreen* screen, QString message, const QDateTime& deadline)
+	BreakWindow(QScreen* screen, QString message, const QDateTime& deadline, std::function<void()> onSkip)
 		: _mMessage(std::move(message))
-		, _mDeadline(deadline) {
+		, _mDeadline(deadline)
+		, _mOnSkip(std::move(onSkip)) {
 		setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
 		setWindowTitle(QStringLiteral("休息时间"));
 		setAttribute(Qt::WA_DeleteOnClose, false);
@@ -53,6 +55,25 @@ class BreakWindow final : public QWidget {
 		_mRemainingLabel->setObjectName(QStringLiteral("remaining"));
 		_mRemainingLabel->setAlignment(Qt::AlignCenter);
 		layout->addWidget(_mRemainingLabel);
+
+		auto* hint = new QLabel(QStringLiteral("按 Esc 或点击下方按钮可以申请跳过；默认继续休息。"), this);
+		hint->setObjectName(QStringLiteral("hint"));
+		hint->setAlignment(Qt::AlignCenter);
+		hint->setStyleSheet(QStringLiteral("color: #c2ccd6; font-size: 15px;"));
+		layout->addWidget(hint);
+
+		auto* skipButton = new QPushButton(QStringLiteral("申请跳过…"), this);
+		skipButton->setFocusPolicy(Qt::NoFocus);
+		skipButton->setStyleSheet(
+			QStringLiteral("QPushButton { background: #2b3a48; color: #f4f7fa; border: 1px solid #4a5c6e;"
+						   " border-radius: 6px; padding: 8px 18px; font-size: 15px; }"
+						   "QPushButton:hover { background: #37495a; }"));
+		if(_mOnSkip)
+			connect(skipButton, &QPushButton::clicked, this, [this] {
+				if(_mOnSkip)
+					_mOnSkip();
+			});
+		layout->addWidget(skipButton, 0, Qt::AlignCenter);
 		layout->addStretch();
 
 		setScreen(screen);
@@ -92,11 +113,12 @@ class BreakWindow final : public QWidget {
 									  .arg(remainingSeconds, 2, 10, QLatin1Char('0')));
 	}
 
-	QString	  _mMessage;
-	QDateTime _mDeadline;
-	QLabel*	  _mMessageLabel   = nullptr;
-	QLabel*	  _mRemainingLabel = nullptr;
-	bool	  _mAllowClose	   = false;
+	QString				  _mMessage;
+	QDateTime			  _mDeadline;
+	std::function<void()> _mOnSkip;
+	QLabel*				  _mMessageLabel   = nullptr;
+	QLabel*				  _mRemainingLabel = nullptr;
+	bool				  _mAllowClose	   = false;
 };
 }  // namespace
 
@@ -148,7 +170,14 @@ void BreakReminder::addWindow(QScreen* screen) {
 	if(!screen)
 		return;
 
-	auto* window = new BreakWindow(screen, _mMessage, _mDeadline);
+	auto* window = new BreakWindow(screen, _mMessage, _mDeadline, [this, screen] {
+		for(const auto& guarded : _mWindows) {
+			if(auto* widget = guarded.data(); widget && widget->screen() == screen) {
+				showSkipConfirmation(widget);
+				return;
+			}
+		}
+	});
 	window->setAttribute(Qt::WA_QuitOnClose, false);
 	_mWindows.append(window);
 
@@ -158,6 +187,7 @@ void BreakReminder::addWindow(QScreen* screen) {
 
 	window->showFullScreen();
 	window->raise();
+	window->activateWindow();
 }
 
 void BreakReminder::showSkipConfirmation(QWidget* parentWindow) {
@@ -170,7 +200,11 @@ void BreakReminder::showSkipConfirmation(QWidget* parentWindow) {
 	dialog->setIcon(QMessageBox::Question);
 	dialog->setWindowTitle(QStringLiteral("确认跳过休息？"));
 	dialog->setText(QStringLiteral("兄弟，真的要跳过这次休息吗？"));
-	dialog->setInformativeText(QStringLiteral("请用鼠标点击「确认跳过」；否则继续休息。"));
+	auto informativeText = _mActionPrompt.trimmed();
+	if(!informativeText.isEmpty())
+		informativeText += QLatin1Char('\n');
+	informativeText += QStringLiteral("请用鼠标点击「确认跳过」；否则继续休息。");
+	dialog->setInformativeText(informativeText);
 	dialog->setWindowModality(Qt::WindowModal);
 	dialog->setWindowFlag(Qt::WindowStaysOnTopHint);
 

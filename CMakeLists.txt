@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
-project(ProtectBrothersHealth VERSION 1.1.1 LANGUAGES CXX)
+project(ProtectBrothersHealth VERSION 1.2.0 LANGUAGES CXX)
+include(GNUInstallDirs)
+set(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -41,6 +43,9 @@ if(UNIX AND NOT APPLE)
     find_package(Qt6 6.4 REQUIRED COMPONENTS DBus)
 endif()
 include(CTest)
+option(BROHEALTH_REGISTER_NOTIFICATION_TESTS
+    "Register tests that display desktop notifications"
+    OFF)
 
 if(BUILD_TESTING)
     find_package(Qt6 6.4 REQUIRED COMPONENTS Test)
@@ -77,23 +82,37 @@ endif()
 
 add_library(brohealth-core STATIC
     include/break_reminder.h
-    include/break_timer.h
     include/color_temp.h
+    include/debt_ledger.h
+    include/desktop_notifier.h
     include/mainwindow.h
     include/monitor_ctrl.h
+    include/phrase_catalog.h
     include/preset_manager.h
+    include/reminder_manager.h
     include/settings_manager.h
     src/break_reminder.cpp
-    src/break_timer.cpp
     src/color_temp.cpp
+    src/debt_ledger.cpp
+    src/desktop_notifier.cpp
     src/mainwindow.cpp
     src/monitor_ctrl.cpp
+    src/phrase_catalog.cpp
     src/preset_manager.cpp
+    src/reminder_manager.cpp
     src/settings_manager.cpp
 )
 target_include_directories(brohealth-core
     PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(brohealth-core PUBLIC Qt6::Widgets)
+if(UNIX AND NOT APPLE)
+    target_link_libraries(brohealth-core PUBLIC Qt6::DBus)
+    target_compile_definitions(brohealth-core PRIVATE
+        BROHEALTH_HAVE_DBUS=1
+        BROHEALTH_BUILD_BINARY_DIR="${CMAKE_CURRENT_BINARY_DIR}"
+        BROHEALTH_BUNDLED_PHRASES_CONF="${PROJECT_SOURCE_DIR}/resources/phrases.conf"
+        BROHEALTH_INSTALLED_PHRASES_CONF="${CPACK_PACKAGING_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/brohealth/phrases.conf")
+endif()
 
 add_executable(brohealth
     include/platform_tray.h
@@ -118,7 +137,6 @@ set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
 set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${PROJECT_VERSION}-${CMAKE_SYSTEM_NAME}")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Multi-monitor display adjustment and scheduled break reminders")
 set(CPACK_GENERATOR "DEB;RPM")
-set(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
 
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Protect Brother's Health contributors")
 set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
@@ -131,8 +149,10 @@ set(CPACK_RPM_PACKAGE_REQUIRES "xrandr, redshift, gammastep, qt6-qtbase-gui, qt6
 set(CPACK_RPM_PACKAGE_OBSOLETES "screen-light-adjust")
 set(CPACK_RPM_PACKAGE_AUTOREQ ON)
 
-include(GNUInstallDirs)
 install(TARGETS brohealth RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+install(FILES "resources/phrases.conf"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/brohealth"
+        PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
 install(FILES "resources/brohealth.desktop"
         DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications"
         PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
@@ -155,9 +175,28 @@ if(BUILD_TESTING)
         tests/brohealth_test.cpp
     )
     target_link_libraries(brohealth-tests PRIVATE brohealth-core Qt6::Test)
+    target_compile_definitions(brohealth-tests PRIVATE
+        BROHEALTH_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME brohealth-tests COMMAND brohealth-tests)
     set_tests_properties(brohealth-tests PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+    add_test(NAME brohealth-phrase-check
+        COMMAND brohealth --check-phrases "${PROJECT_SOURCE_DIR}/resources/phrases.conf")
+    set_tests_properties(brohealth-phrase-check PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+    if(UNIX AND NOT APPLE)
+        add_executable(brohealth-notification-test
+            tests/notification_test.cpp
+        )
+        target_link_libraries(brohealth-notification-test PRIVATE brohealth-core)
+        if(BROHEALTH_REGISTER_NOTIFICATION_TESTS)
+            add_test(NAME brohealth-notification-test
+                COMMAND brohealth-notification-test "${PROJECT_SOURCE_DIR}/resources/phrases.conf")
+            set_tests_properties(brohealth-notification-test PROPERTIES TIMEOUT 30)
+        endif()
+    endif()
 endif()
 
 # Convenience target: cmake --build --preset <name> --target deb
