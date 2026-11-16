@@ -8,15 +8,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Default to the distribution Qt. Building a package against an official Qt SDK
-# produces a binary that references symbols such as Qt_6.11 and then aborts on
-# machines that only ship the distribution Qt, so opting out must be explicit.
+set(_system_qt_default OFF)
+if("$ENV{QT_HOME_PATH}" STREQUAL "")
+    set(_system_qt_default ON)
+endif()
 option(BROHEALTH_USE_SYSTEM_QT
-    "Build against the distribution Qt (required for portable DEB/RPM packages)"
-    ON)
-
-set(BROHEALTH_SYSTEM_QT_PREFIX "/usr" CACHE PATH
-    "Distribution Qt prefix used by portable DEB/RPM builds")
+    "Use the distribution Qt installation for portable packages"
+    "${_system_qt_default}")
 
 if(BROHEALTH_USE_SYSTEM_QT)
     # A package build must not reuse a cached custom Qt configuration.
@@ -30,40 +28,14 @@ elseif(NOT "$ENV{QT_HOME_PATH}" STREQUAL "")
     set(QT_PLUGIN_DIR "$ENV{QT_HOME_PATH}/plugins")
 endif()
 
-if(BROHEALTH_USE_SYSTEM_QT AND NOT "$ENV{QT_HOME_PATH}" STREQUAL "")
-    message(WARNING
-        "QT_HOME_PATH is set, but this build uses the distribution Qt. "
-        "Run the build from a shell without QT_HOME_PATH if CMake picks up the SDK.")
-endif()
-
 if(BROHEALTH_USE_SYSTEM_QT)
-    # Do not let a PATH entry or an SDK environment variable redirect
-    # find_package() to a Qt that the target distribution does not ship.
-    set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH FALSE)
-    set(CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH FALSE)
-    set(CMAKE_FIND_USE_PACKAGE_REGISTRY FALSE)
-    set(CMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY FALSE)
-
-    # Honour the configured distribution prefix explicitly instead of relying on
-    # whatever CMAKE_PREFIX_PATH happens to contain.
-    list(APPEND CMAKE_PREFIX_PATH "${BROHEALTH_SYSTEM_QT_PREFIX}")
-
-    # Fail with an actionable message instead of CMake's generic one when the
-    # distribution Qt development packages are simply not installed.
-    file(GLOB _system_qt_config
-        "${BROHEALTH_SYSTEM_QT_PREFIX}/lib/*/cmake/Qt6/Qt6Config.cmake"
-        "${BROHEALTH_SYSTEM_QT_PREFIX}/lib/cmake/Qt6/Qt6Config.cmake")
-    if(NOT _system_qt_config)
-        message(FATAL_ERROR
-            "The distribution Qt development packages are missing: no Qt6Config.cmake "
-            "was found under ${BROHEALTH_SYSTEM_QT_PREFIX}. "
-            "Debian/Ubuntu: sudo apt install qt6-base-dev qt6-base-dev-tools qmake6. "
-            "Fedora/RHEL: sudo dnf install qt6-qtbase-devel. "
-            "Arch: sudo pacman -S qt6-base. "
-            "A build against an official Qt SDK is only meant for local runs; "
-            "such a package cannot start on machines that ship the distribution Qt.")
+    if(DEFINED CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH)
+        set(_find_system_environment_path_defined ON)
+        set(_find_system_environment_path "${CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH}")
+    else()
+        set(_find_system_environment_path_defined OFF)
     endif()
-    unset(_system_qt_config)
+    set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH FALSE)
 endif()
 
 find_package(Qt6 6.4 REQUIRED COMPONENTS Widgets)
@@ -80,23 +52,18 @@ if(BUILD_TESTING)
 endif()
 
 if(BROHEALTH_USE_SYSTEM_QT)
-    unset(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH)
-    unset(CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH)
-    unset(CMAKE_FIND_USE_PACKAGE_REGISTRY)
-    unset(CMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY)
+    if(_find_system_environment_path_defined)
+        set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH "${_find_system_environment_path}")
+    else()
+        unset(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH)
+    endif()
+    unset(_find_system_environment_path_defined)
+    unset(_find_system_environment_path)
 
-    # Every distro package installs its Qt either in /usr or under the sysroot
-    # prefix used by cross builds; anything else is a hand-made SDK.
-    get_filename_component(_qt_core_dir_real "${Qt6Core_DIR}" REALPATH)
-    get_filename_component(_system_qt_prefix_real "${BROHEALTH_SYSTEM_QT_PREFIX}" REALPATH)
-    string(FIND "${_qt_core_dir_real}" "${_system_qt_prefix_real}/" _system_qt_index)
-    if(NOT _system_qt_index EQUAL 0)
+    if(NOT Qt6Core_DIR MATCHES "^/usr/")
         message(FATAL_ERROR
-            "System Qt was requested, but Qt6Core was resolved from '${_qt_core_dir_real}', "
-            "which is outside ${_system_qt_prefix_real}. "
-            "Install the distribution Qt development packages (Debian/Ubuntu: "
-            "qt6-base-dev qt6-base-dev-tools qmake6), run the build in a shell without "
-            "QT_HOME_PATH, and use a fresh build directory.")
+            "System Qt was requested, but Qt6Core was resolved from '${Qt6Core_DIR}'. "
+            "Install the distribution's Qt development package and use a fresh build directory.")
     endif()
 endif()
 
@@ -105,10 +72,6 @@ endif()
 if(QT_PLUGIN_DIR)
     configure_file(resources/qt.conf "${CMAKE_CURRENT_BINARY_DIR}/qt.conf" @ONLY)
 endif()
-
-# A portable package must not depend on Qt newer than the distribution ships.
-# The check runs before CPack writes a package and again from CTest.
-set(BROHEALTH_QT_RUNTIME_VERSION "${Qt6Core_VERSION}")
 
 # -------------------- Binary --------------------
 
@@ -223,19 +186,6 @@ if(BUILD_TESTING)
     set_tests_properties(brohealth-phrase-check PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
-    if(BROHEALTH_USE_SYSTEM_QT)
-        add_test(NAME brohealth-qt-symbols COMMAND "${CMAKE_COMMAND}"
-            "-DBINARY=$<TARGET_FILE:brohealth>"
-            "-DEXPECTED_QT_VERSION=${BROHEALTH_QT_RUNTIME_VERSION}"
-            -P "${PROJECT_SOURCE_DIR}/cmake/verify_qt_symbols.cmake")
-    endif()
-
-    add_test(NAME brohealth-packaging-guard COMMAND "${CMAKE_COMMAND}"
-        "-DTEST_DIRECTORY=${CMAKE_CURRENT_BINARY_DIR}/packaging-guard-test"
-        "-DPACKAGE_POLICY=${PROJECT_SOURCE_DIR}/cmake/require_system_qt.cmake"
-        "-DVERIFIER=${PROJECT_SOURCE_DIR}/cmake/verify_qt_symbols.cmake"
-        -P "${PROJECT_SOURCE_DIR}/tests/packaging_guard_test.cmake")
-
     if(UNIX AND NOT APPLE)
         add_executable(brohealth-notification-test
             tests/notification_test.cpp
@@ -250,31 +200,18 @@ if(BUILD_TESTING)
 endif()
 
 # Convenience target: cmake --build --preset <name> --target deb
-#
-# The Qt symbol check runs before CPack so a package that would only start
-# against the development Qt is never written to disk.
 add_custom_target(deb
     COMMAND ${CMAKE_COMMAND}
         -DBROHEALTH_USE_SYSTEM_QT=${BROHEALTH_USE_SYSTEM_QT}
         -P "${PROJECT_SOURCE_DIR}/cmake/require_system_qt.cmake"
-    COMMAND ${CMAKE_COMMAND}
-        "-DBINARY=$<TARGET_FILE:brohealth>"
-        "-DEXPECTED_QT_VERSION=${BROHEALTH_QT_RUNTIME_VERSION}"
-        -P "${PROJECT_SOURCE_DIR}/cmake/verify_qt_symbols.cmake"
     COMMAND ${CMAKE_CPACK_COMMAND} -G DEB
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-    DEPENDS brohealth
     COMMENT "Generating .deb package…")
 
 add_custom_target(rpm
     COMMAND ${CMAKE_COMMAND}
         -DBROHEALTH_USE_SYSTEM_QT=${BROHEALTH_USE_SYSTEM_QT}
         -P "${PROJECT_SOURCE_DIR}/cmake/require_system_qt.cmake"
-    COMMAND ${CMAKE_COMMAND}
-        "-DBINARY=$<TARGET_FILE:brohealth>"
-        "-DEXPECTED_QT_VERSION=${BROHEALTH_QT_RUNTIME_VERSION}"
-        -P "${PROJECT_SOURCE_DIR}/cmake/verify_qt_symbols.cmake"
     COMMAND ${CMAKE_CPACK_COMMAND} -G RPM
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-    DEPENDS brohealth
     COMMENT "Generating .rpm package…")

@@ -148,29 +148,15 @@ detached HEAD：你和身体的连接断在某个提交。
 
 ## 从源码构建
 
-需要 Qt 6.4 或更新版本的 Widgets 模块、CMake 3.16 或更新版本，以及 C++17 编译器。Linux 下还需要 Qt DBus 模块。
-
-用发行版 Qt 直接构建（Debian/Ubuntu 需要 `sudo apt install qt6-base-dev qt6-base-dev-tools qmake6`）：
+需要 Qt 6.4 或更新版本的 Widgets 模块、CMake 3.16 或更新版本，以及 C++17 编译器。Linux 下还需要 Qt DBus 模块。使用 Qt 官方安装器提供的 Qt 时，先让 `QT_HOME_PATH` 指向对应的 Qt 安装目录：
 
 ```bash
-cmake -S . -B build/dev -DCMAKE_BUILD_TYPE=Debug
+cmake -S . -B build/dev \
+  -DCMAKE_PREFIX_PATH="$QT_HOME_PATH" \
+  -DCMAKE_BUILD_TYPE=Debug
 cmake --build build/dev
 ctest --test-dir build/dev --output-on-failure
 ```
-
-用 Qt 官方安装器提供的 Qt 开发时，显式关闭发行版 Qt：
-
-```bash
-export QT_HOME_PATH="$HOME/Programs/Qt/6.11.2/gcc_64"
-cmake -S . -B build/dev-sdk \
-  -DBROHEALTH_USE_SYSTEM_QT=OFF \
-  -DCMAKE_PREFIX_PATH="$QT_HOME_PATH" \
-  -DCMAKE_BUILD_TYPE=Debug
-cmake --build build/dev-sdk
-ctest --test-dir build/dev-sdk --output-on-failure
-```
-
-这种构建只适合本机运行：二进制引用的 Qt 符号版本比发行版更新，不能作为安装包分发。`deb`/`rpm` 目标会用 `cmake/verify_qt_symbols.cmake` 拦下这类包。
 
 测试需要 Qt Test 模块。单元测试会：
 
@@ -190,39 +176,24 @@ ctest --test-dir build/dev-sdk --output-on-failure
 
 ## 构建 DEB 或 RPM
 
-### 使用发行版 Qt（DEB/RPM，默认方式）
-
-打包必须使用目标发行版提供的 Qt。用官方 Qt SDK 编译出的二进制会引用 `Qt_6.11` 这类符号版本，装到只有 Qt 6.4 的机器上会在启动时报缺少符号，因此现在的默认值就是发行版 Qt：
+DEB 和 RPM 使用目标发行版提供的 Qt 编译，这样安装包依赖发行版的运行库。即使开发环境设置了 `QT_HOME_PATH`，打包时也要使用新的构建目录并显式启用系统 Qt：
 
 ```bash
-# 建议在未设置 QT_HOME_PATH 的 shell 里执行
-sudo apt install qt6-base-dev qt6-base-dev-tools qmake6
 cmake -S . -B build/package \
+  -DBROHEALTH_USE_SYSTEM_QT=ON \
   -DCMAKE_BUILD_TYPE=Release \
   -DBUILD_TESTING=OFF
 cmake --build build/package --target deb
 ```
 
-`BROHEALTH_USE_SYSTEM_QT` 默认 `ON`。设置了 `QT_HOME_PATH` 也不影响这个默认值，CMake 只会给出警告；如果 CMake 仍然找到了 SDK 里的 Qt，配置会直接失败并说明原因。要恢复 SDK 开发构建，需显式设置 `-DBROHEALTH_USE_SYSTEM_QT=OFF`。
-
-打包前会自动执行 `cmake/verify_qt_symbols.cmake`，用 `objdump -T` 检查二进制引用的 Qt 符号版本：
-
-- 引用了比构建时 Qt 更新的符号（例如给系统 Qt 6.4 打包却引用了 `Qt_6.11`）时打包失败；
-- 引用了 `Qt_6_PRIVATE_API` 时打包失败，因为这种二进制只能配合完全相同的 Qt 运行；
-- 检查通过会打印类似 `Qt symbol versions in brohealth: Qt_6;Qt_6.4 (limit 6.4.2)` 的一行。
-
-同一个检查也注册为 CTest 用例 `brohealth-qt-symbols`，在 `BROHEALTH_USE_SYSTEM_QT=ON` 时随 `ctest` 一起运行。
-
-Debian/Ubuntu 构建需要 `qt6-base-dev`、`qt6-base-dev-tools` 和 `qmake6`（后两个通常作为依赖自动安装）。缺失时 CMake 会直接提示安装命令。安装生成的 DEB 时，包管理器会安装声明的运行依赖：
+Debian/Ubuntu 构建需要 `qt6-base-dev`。安装生成的 DEB 时，包管理器会安装声明的运行依赖：
 
 ```bash
 sudo apt install ./build/package/protect-brothers-health-1.2.0-Linux.deb
 brohealth
 ```
 
-包里的 Qt 依赖来自 `dpkg-shlibdeps` 的实际分析，例如 `libqt6core6t64 (>= 6.4.0)`、`libqt6widgets6t64 (>= 6.3.0)`，因此不会要求发行版根本没提供的版本。
-
-Fedora/RHEL 等 RPM 系统需要发行版对应的 Qt 开发包（`qt6-qtbase-devel`）和 `rpmbuild`，将构建目标改为 `rpm`。Wayland 桌面还需要发行版提供 Qt Wayland 平台插件。
+Fedora/RHEL 等 RPM 系统需要发行版对应的 Qt 开发包和 `rpmbuild`，将构建目标改为 `rpm`。Wayland 桌面还需要发行版提供 Qt Wayland 平台插件。
 
 ## 代码目录
 
