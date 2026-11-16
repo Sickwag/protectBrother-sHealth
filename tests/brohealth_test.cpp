@@ -123,6 +123,7 @@ class ProtectBrothersHealthTest : public QObject {
 	void reminderNotificationCopyRespondsToLevel();
 	void reminderManagerRunsBreakCycleAndBuildsReport();
 	void settingsMigrateV2AndPersistReminders();
+	void autostartUsesAbsoluteExecutablePath();
 	void presetsStoreReminderConfiguration();
 	void migratesLegacyConfigurationDirectory();
 	void reminderCreatesOneWindowPerScreen();
@@ -812,6 +813,22 @@ void ProtectBrothersHealthTest::settingsMigrateV2AndPersistReminders() {
 	QCOMPARE(merged.at(0)._brightness, 50);
 	QCOMPARE(merged.at(1)._name, QStringLiteral("HDMI-1"));
 	QCOMPARE(merged.at(1)._brightness, 90);
+}
+
+void ProtectBrothersHealthTest::autostartUsesAbsoluteExecutablePath() {
+	QString error;
+	QVERIFY(SettingsManager::applyAutostart(true, &error));
+	const auto path = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)
+					  + QStringLiteral("/autostart/brohealth.desktop");
+	// Desktop sessions start the binary directly, so the entry must not depend
+	// on PATH or on a shell profile exporting QT_HOME_PATH.
+	const auto contents = readFile(path);
+	QVERIFY2(contents.contains(
+				 QStringLiteral("Exec=\"%1\" --hidden").arg(QCoreApplication::applicationFilePath())),
+			 qPrintable(contents));
+	QVERIFY(QDir::isAbsolutePath(QCoreApplication::applicationFilePath()));
+	QVERIFY(SettingsManager::applyAutostart(false, &error));
+	QVERIFY(!QFile::exists(path));
 }
 
 void ProtectBrothersHealthTest::presetsStoreReminderConfiguration() {

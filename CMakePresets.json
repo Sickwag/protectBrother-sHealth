@@ -1,0 +1,237 @@
+{
+	"version": 6,
+	"cmakeMinimumRequired": {
+		"major": 3,
+		"minor": 25,
+		"patch": 0
+	},
+	"configurePresets": [
+		{
+			"name": "base",
+			"hidden": true,
+			"binaryDir": "${sourceDir}/build/${presetName}",
+			"installDir": "${sourceDir}/install/${presetName}",
+			"cacheVariables": {
+				"CMAKE_CXX_STANDARD": "17",
+				"CMAKE_CXX_STANDARD_REQUIRED": true,
+				"CMAKE_EXPORT_COMPILE_COMMANDS": true
+			}
+		},
+		{
+			"name": "debug",
+			"displayName": "Debug DEB",
+			"description": "Build a DEB package with the distribution Qt libraries",
+			"inherits": "base",
+			"binaryDir": "${sourceDir}/build/package-debug",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug",
+				"CMAKE_CXX_FLAGS": "-g -O0",
+				"BROHEALTH_USE_SYSTEM_QT": true,
+				"BUILD_TESTING": false
+			}
+		},
+		{
+			"name": "release",
+			"displayName": "Release DEB",
+			"description": "Build a DEB package with the distribution Qt libraries",
+			"inherits": "base",
+			"binaryDir": "${sourceDir}/build/package-release",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release",
+				"CMAKE_CXX_FLAGS": "-O3",
+				"BROHEALTH_USE_SYSTEM_QT": true,
+				"BUILD_TESTING": false
+			}
+		},
+		{
+			"name": "dev-debug",
+			"displayName": "Debug (Qt from QT_HOME_PATH)",
+			"description": "Build the application against the Qt installation in QT_HOME_PATH",
+			"inherits": "base",
+			"environment": {
+				"QT_HOME_PATH": "$penv{QT_HOME_PATH}"
+			},
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug",
+				"CMAKE_CXX_FLAGS": "-g -O0",
+				"BROHEALTH_USE_SYSTEM_QT": false
+			}
+		},
+		{
+			"name": "dev-release",
+			"displayName": "Release (Qt from QT_HOME_PATH)",
+			"description": "Build the application against the Qt installation in QT_HOME_PATH",
+			"inherits": "base",
+			"environment": {
+				"QT_HOME_PATH": "$penv{QT_HOME_PATH}"
+			},
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release",
+				"CMAKE_CXX_FLAGS": "-O3",
+				"BROHEALTH_USE_SYSTEM_QT": false
+			}
+		},
+		{
+			"name": "test-debug",
+			"displayName": "Debug Tests (system Qt)",
+			"description": "Configure tests with the distribution Qt libraries",
+			"inherits": "base",
+			"binaryDir": "${sourceDir}/build/test-debug",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug",
+				"CMAKE_CXX_FLAGS": "-g -O0",
+				"BROHEALTH_USE_SYSTEM_QT": true,
+				"BUILD_TESTING": true
+			}
+		},
+		{
+			"name": "test-release",
+			"displayName": "Release Tests (system Qt)",
+			"description": "Configure tests with the distribution Qt libraries",
+			"inherits": "base",
+			"binaryDir": "${sourceDir}/build/test-release",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release",
+				"CMAKE_CXX_FLAGS": "-O3",
+				"BROHEALTH_USE_SYSTEM_QT": true,
+				"BUILD_TESTING": true
+			}
+		}
+	],
+	"buildPresets": [
+		{
+			"name": "debug",
+			"displayName": "Build Debug DEB",
+			"configurePreset": "debug",
+			"targets": ["deb"]
+		},
+		{
+			"name": "release",
+			"displayName": "Build Release DEB",
+			"configurePreset": "release",
+			"targets": ["deb"]
+		},
+		{
+			"name": "dev-debug",
+			"displayName": "Build Debug Application",
+			"configurePreset": "dev-debug"
+		},
+		{
+			"name": "dev-release",
+			"displayName": "Build Release Application",
+			"configurePreset": "dev-release"
+		},
+		{
+			"name": "test-debug",
+			"displayName": "Build Debug Tests",
+			"configurePreset": "test-debug"
+		},
+		{
+			"name": "test-release",
+			"displayName": "Build Release Tests",
+			"configurePreset": "test-release"
+		}
+	],
+	"testPresets": [
+		{
+			"name": "base-test",
+			"hidden": true,
+			"output": {
+				"outputOnFailure": true,
+				"verbosity": "default"
+			},
+			"execution": {
+				"noTestsAction": "error",
+				"stopOnFailure": false
+			}
+		},
+		{
+			"name": "debug",
+			"displayName": "Debug Test",
+			"description": "Run tests configured with system Qt",
+			"inherits": "base-test",
+			"configurePreset": "test-debug"
+		},
+		{
+			"name": "release",
+			"displayName": "Release Test",
+			"description": "Run tests configured with system Qt",
+			"inherits": "base-test",
+			"configurePreset": "test-release"
+		},
+		{
+			"name": "debug-verbose",
+			"displayName": "Debug Test (Verbose)",
+			"description": "Run tests with Debug build (verbose output)",
+			"inherits": "base-test",
+			"configurePreset": "test-debug",
+			"output": {
+				"outputOnFailure": true,
+				"verbosity": "extra"
+			}
+		},
+		{
+			"name": "release-verbose",
+			"displayName": "Release Test (Verbose)",
+			"description": "Run tests with Release build (verbose output)",
+			"inherits": "base-test",
+			"configurePreset": "test-release",
+			"output": {
+				"outputOnFailure": true,
+				"verbosity": "extra"
+			}
+		}
+	],
+	"packagePresets": [
+		{
+			"name": "debug",
+			"displayName": "Debug DEB Package",
+			"description": "Package the Debug build as a DEB",
+			"configurePreset": "debug",
+			"generators": ["DEB"],
+			"configurations": ["Debug"],
+			"packageDirectory": "${sourceDir}/build/packages/debug"
+		},
+		{
+			"name": "release",
+			"displayName": "Release DEB Package",
+			"description": "Package the Release build as a DEB",
+			"configurePreset": "release",
+			"generators": ["DEB"],
+			"configurations": ["Release"],
+			"packageDirectory": "${sourceDir}/build/packages/release"
+		}
+	],
+	"workflowPresets": [
+		{
+			"name": "build-and-pack-debug",
+			"displayName": "Configure and Build Debug DEB",
+			"description": "Configure and generate the Debug DEB using system Qt",
+			"steps": [
+				{
+					"type": "configure",
+					"name": "debug"
+				},
+				{
+					"type": "build",
+					"name": "debug"
+				}
+			]
+		},
+		{
+			"name": "build-and-pack-release",
+			"displayName": "Configure and Build Release DEB",
+			"description": "Configure and generate the Release DEB using system Qt",
+			"steps": [
+				{
+					"type": "configure",
+					"name": "release"
+				},
+				{
+					"type": "build",
+					"name": "release"
+				}
+			]
+		}
+	]
+}

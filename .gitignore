@@ -71,8 +71,11 @@ cmake_install.cmake
 Makefile
 CTestTestfile.cmake
 *.cmake
-CMakePresets.json
+!cmake/*.cmake
+!tests/*.cmake
+CMakeUserPresets.json
 !CMakeLists.txt
+!CMakePresets.json
 CMakeLists.txt.user
 
 # Compiled Python files
